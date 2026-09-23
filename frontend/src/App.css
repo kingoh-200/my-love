@@ -1,0 +1,349 @@
+/* ---------- layout & shared ---------- */
+
+.app {
+  position: relative;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+}
+
+.stage {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 48px 24px 64px;
+  max-width: 680px;
+  width: 100%;
+  text-align: center;
+}
+
+.title {
+  font-size: 40px;
+  letter-spacing: -1px;
+  color: var(--text-h);
+  line-height: 1.15;
+}
+
+.subtitle {
+  font-size: 20px;
+  opacity: 0.85;
+}
+
+.card {
+  width: 100%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  box-shadow: 0 18px 40px var(--shadow);
+  padding: 40px 32px;
+}
+
+.hint,
+.nudge,
+.teaser {
+  font-size: 15px;
+  opacity: 0.7;
+}
+
+.nudge {
+  min-height: 24px;
+  color: var(--pink-deep);
+  font-weight: 600;
+  opacity: 1;
+}
+
+/* ---------- envelope ---------- */
+
+.envelope-scene {
+  perspective: 800px;
+  margin-top: 24px;
+}
+
+.envelope {
+  position: relative;
+  width: 220px;
+  height: 150px;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  background: linear-gradient(180deg, #ffd6e2 0%, #ffc2d6 100%);
+  border-radius: 10px;
+  box-shadow: 0 16px 32px var(--shadow);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.envelope:hover {
+  transform: translateY(-4px) scale(1.03);
+  box-shadow: 0 22px 44px var(--shadow);
+}
+
+.envelope .flap {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 52%;
+  background: linear-gradient(180deg, #ffb9cf 0%, #ff9dbb 100%);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  transition: transform 0.4s ease;
+  transform-origin: top;
+  z-index: 2;
+}
+
+.envelope:hover .flap {
+  transform: rotateX(40deg);
+}
+
+.envelope .letter-peek {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.logo {
+  width: 56px;
+  height: 56px;
+  color: var(--pink);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+}
+
+.envelope .glow {
+  position: absolute;
+  inset: -14px;
+  border-radius: 18px;
+  background: radial-gradient(circle, rgba(255, 93, 143, 0.35) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 0;
+}
+
+.envelope:hover .glow {
+  opacity: 1;
+}
+
+/* ---------- floating hearts ---------- */
+
+.hearts-rain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.hearts-rain span {
+  position: absolute;
+  top: -40px;
+  color: var(--pink);
+  animation: heartFall linear infinite;
+  text-shadow: 0 2px 6px rgba(255, 93, 143, 0.3);
+}
+
+@keyframes heartFall {
+  0% {
+    transform: translateY(0) translateX(0) rotate(-8deg);
+  }
+  50% {
+    transform: translateY(55vh) translateX(var(--drift, 20px)) rotate(8deg);
+  }
+  100% {
+    transform: translateY(110vh) translateX(0) rotate(-8deg);
+  }
+}
+
+/* ---------- question stage ---------- */
+
+.question-card {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  align-items: center;
+}
+
+.question {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.buttons {
+  position: relative;
+  width: 100%;
+  min-height: 120px;
+  display: flex;
+  gap: 18px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.btn {
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  font-weight: 700;
+  padding: 14px 36px;
+  border-radius: 999px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn.yes {
+  background: linear-gradient(135deg, var(--pink) 0%, #ff8fb1 100%);
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(255, 93, 143, 0.45);
+}
+
+.btn.yes:hover {
+  transform: scale(1.05);
+}
+
+.btn.no {
+  position: absolute;
+  left: calc(50% + 40px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: #f1f1f3;
+  color: #555;
+  transition: left 0.25s ease, top 0.25s ease, transform 0.2s ease;
+}
+
+.btn.no:hover {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.broken {
+  position: fixed;
+  transform: translate(-50%, -50%);
+  font-size: 30px;
+  pointer-events: none;
+  z-index: 50;
+  animation: shatter 0.7s ease-out forwards;
+}
+
+@keyframes shatter {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.6);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -140%) scale(1.4) rotate(18deg);
+  }
+}
+
+/* ---------- celebration stage ---------- */
+
+.celebrate-card {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+  position: relative;
+}
+
+.big-heart {
+  font-size: 72px;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.chip {
+  border: 2px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.chip:hover {
+  border-color: var(--pink);
+  background: #fff0f5;
+  transform: translateY(-2px);
+}
+
+.chip-selected {
+  border-color: var(--pink);
+  background: var(--pink);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(255, 93, 143, 0.4);
+}
+
+.chosen {
+  font-weight: 700;
+  color: var(--pink-deep);
+}
+
+.confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  overflow: hidden;
+}
+
+.confetti span {
+  position: absolute;
+  top: -20px;
+  width: 10px;
+  height: 14px;
+  border-radius: 2px;
+  animation: confettiFall linear forwards;
+}
+
+@keyframes confettiFall {
+  0% {
+    transform: translateY(0) rotate(0deg) translateX(0);
+  }
+  100% {
+    transform: translateY(110vh) rotate(720deg) translateX(var(--drift, 40px));
+  }
+}
+
+/* ---------- small screens ---------- */
+
+@media (max-width: 640px) {
+  .title {
+    font-size: 30px;
+  }
+
+  .question {
+    font-size: 26px;
+  }
+
+  .card {
+    padding: 28px 20px;
+  }
+
+  .btn {
+    font-size: 18px;
+    padding: 12px 28px;
+  }
+}

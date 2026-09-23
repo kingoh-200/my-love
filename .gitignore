@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+
+# Local data (never commit the answers log)
+data/
+backend/answers.json
+
+# Node
+node_modules/
+dist/
+
+# Env & secrets
+.env
+.env.local
+.env.*.local
+
+# Vercel
+.vercel
+
+# OS / editor
+.DS_Store
+Thumbs.db

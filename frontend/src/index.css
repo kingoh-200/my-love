@@ -1,0 +1,53 @@
+:root {
+  --pink: #ff5d8f;
+  --pink-deep: #e0447c;
+  --pink-soft: #ffb3c6;
+  --cream: #fff6f9;
+  --deep: #4a2040;
+  --text: #6b2b4f;
+  --text-h: #3d1030;
+  --bg: #fff6f9;
+  --card: #ffffff;
+  --border: #ffd6e2;
+  --shadow: rgba(255, 93, 143, 0.25);
+
+  --sans: "Segoe UI", system-ui, Roboto, sans-serif;
+
+  font-family: var(--sans);
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100svh;
+  background:
+    radial-gradient(1200px 600px at 80% -10%, #ffe3ee 0%, transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, #ffe9f2 0%, transparent 55%),
+    var(--bg);
+}
+
+#root {
+  min-height: 100svh;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+button {
+  font-family: inherit;
+}
