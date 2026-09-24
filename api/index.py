@@ -133,11 +133,11 @@ def health():
 
 @app.get("/api/debug")
 def debug():
-    """Safe diagnostics: shows config shape without leaking the key."""
+    """Safe diagnostics — booleans only, never echoes config values."""
     return {
         "supabase_configured": _using_supabase(),
-        "url": SUPABASE_URL or None,
-        "key_prefix": (SUPABASE_KEY[:10] + "…") if SUPABASE_KEY else None,
+        "url_is_https": SUPABASE_URL.startswith("https://") if SUPABASE_URL else False,
+        "key_is_set": bool(SUPABASE_KEY),
     }
 
 
