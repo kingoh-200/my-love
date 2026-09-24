@@ -11,8 +11,36 @@ app = FastAPI()
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
+RAW_SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
+
+
+def _resolve_supabase_url(raw: str) -> str:
+    """Return a proper https://<ref>.supabase.co REST base URL.
+
+    Forgives the common mistake of pasting the Postgres connection string
+    (postgresql://postgres.<ref>:<password>@host/db) or a bare project ref
+    instead of the Project URL. Never logs or echoes the raw value.
+    """
+    import re
+
+    if not raw:
+        return ""
+    if raw.startswith("https://"):
+        return raw
+    if raw.startswith(("http://", "postgresql://", "postgres://")):
+        m = re.search(r"postgres\.([a-z0-9]{18,24})", raw)  # pooler/user form
+        if not m:
+            m = re.search(r"db\.([a-z0-9]{18,24})\.supabase\.co", raw)  # direct form
+        if m:
+            return f"https://{m.group(1)}.supabase.co"
+        return ""
+    if re.fullmatch(r"[a-z0-9]{18,24}", raw):  # bare project ref
+        return f"https://{raw}.supabase.co"
+    return ""
+
+
+SUPABASE_URL = _resolve_supabase_url(RAW_SUPABASE_URL)
 
 # Writable on your machine and on `vercel dev`; read-only on Vercel prod,
 # where the Supabase table is used instead.
@@ -114,6 +142,11 @@ def _using_supabase() -> bool:
     return bool(SUPABASE_URL and SUPABASE_KEY)
 
 
+def _url_normalized() -> bool:
+    """True when SUPABASE_URL was not a clean https:// Project URL."""
+    return bool(RAW_SUPABASE_URL) and not RAW_SUPABASE_URL.startswith("https://")
+
+
 def _storage_name() -> str:
     return "supabase" if _using_supabase() else "local-file"
 
@@ -137,6 +170,7 @@ def debug():
     return {
         "supabase_configured": _using_supabase(),
         "url_is_https": SUPABASE_URL.startswith("https://") if SUPABASE_URL else False,
+        "url_normalized_from_raw": _url_normalized(),
         "key_is_set": bool(SUPABASE_KEY),
     }
 
