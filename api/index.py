@@ -1,6 +1,7 @@
 import json
 import os
 from datetime import datetime, timezone
+from typing import Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -68,6 +69,34 @@ class Answer(BaseModel):
     accepted: bool
     reason: str = ""
     at: str = ""
+    row_id: Optional[int] = None
+
+
+def _supabase_update(row_id: int, fields: dict) -> list:
+    import urllib.error
+    import urllib.request
+
+    url = f"{SUPABASE_URL}/rest/v1/answers?id=eq.{int(row_id)}"
+    data = json.dumps(fields).encode("utf-8")
+    req = urllib.request.Request(
+        url,
+        data=data,
+        method="PATCH",
+        headers={
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Content-Type": "application/json",
+            "Prefer": "return=representation",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", "replace")
+        raise HTTPException(status_code=502, detail=f"Supabase update failed ({e.code}): {body}")
+    except urllib.error.URLError as e:
+        raise HTTPException(status_code=502, detail=f"Supabase unreachable: {e.reason}")
 
 
 # ---------------------------------------------------------------------------
@@ -177,15 +206,41 @@ def debug():
 
 @app.post("/api/answer")
 def log_answer(answer: Answer):
+    now = datetime.now(timezone.utc).isoformat()
+
+    # Follow-up: attach her date-idea choice to the row created on Yes.
+    if answer.row_id is not None:
+        fields = {}
+        if answer.reason:
+            fields["reason"] = answer.reason
+        if fields:
+            fields["at"] = answer.at or now
+            if _using_supabase():
+                rows = _supabase_update(answer.row_id, fields)
+                row = rows[0] if rows else {"id": answer.row_id, **fields}
+            else:
+                entries = _local_read()
+                row = None
+                for e in entries:
+                    if e.get("id") == answer.row_id:
+                        e.update(fields)
+                        row = e
+                        break
+                _local_write(entries)
+                row = row or {"id": answer.row_id, **fields}
+            return {"ok": True, "storage": _storage_name(), "row": row}
+
+    # Fresh answer (the Yes click) — create a new row.
     entry = {
         "accepted": answer.accepted,
         "reason": answer.reason,
-        "at": answer.at or datetime.now(timezone.utc).isoformat(),
+        "at": answer.at or now,
     }
     if _using_supabase():
         row = _supabase_insert(entry)
     else:
         entries = _local_read()
+        entry = {"id": len(entries) + 1, **entry}
         entries.append(entry)
         _local_write(entries)
         row = entry

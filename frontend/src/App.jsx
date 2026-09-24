@@ -208,32 +208,44 @@ function Confetti() {
 export default function App() {
   const [stage, setStage] = useState("envelope");
   const [chosen, setChosen] = useState(null);
-  const [yesLogged, setYesLogged] = useState(false);
-  const [reasonLogged, setReasonLogged] = useState(false);
+  const rowIdRef = useRef(null);
 
-  const postAnswer = (payload) => {
-    fetch("/api/answer", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...payload, at: new Date().toISOString() }),
-    }).catch(() => {
+  const postAnswer = async (payload) => {
+    try {
+      const res = await fetch("/api/answer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...payload, at: new Date().toISOString() }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data?.row?.id ?? null;
+      }
+    } catch {
       /* backend not running — the romance continues anyway */
-    });
-  };
-
-  const handleYes = () => {
-    if (!yesLogged) {
-      setYesLogged(true);
-      postAnswer({ accepted: true });
     }
-    setStage("celebration");
+    return null;
   };
 
-  const handleChip = (idea) => {
+  const handleYes = async () => {
+    setStage("celebration");
+    if (rowIdRef.current == null) {
+      const id = await postAnswer({ accepted: true });
+      if (id != null) rowIdRef.current = id;
+    }
+  };
+
+  const handleChip = async (idea) => {
     setChosen(idea);
-    if (!reasonLogged) {
-      setReasonLogged(true);
-      postAnswer({ accepted: true, reason: idea });
+    if (rowIdRef.current != null) {
+      postAnswer({ accepted: true, reason: idea, row_id: rowIdRef.current });
+    } else {
+      // Yes-write still in flight: retry shortly with the row id once known.
+      setTimeout(() => {
+        if (rowIdRef.current != null) {
+          postAnswer({ accepted: true, reason: idea, row_id: rowIdRef.current });
+        }
+      }, 1500);
     }
   };
 
