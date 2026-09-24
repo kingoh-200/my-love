@@ -2,7 +2,7 @@ import json
 import os
 from datetime import datetime, timezone
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -46,6 +46,7 @@ class Answer(BaseModel):
 # Storage: Supabase (Postgres) when configured, local JSON file otherwise
 # ---------------------------------------------------------------------------
 def _supabase_insert(entry: dict) -> dict:
+    import urllib.error
     import urllib.request
 
     url = f"{SUPABASE_URL}/rest/v1/answers"
@@ -61,12 +62,19 @@ def _supabase_insert(entry: dict) -> dict:
             "Prefer": "return=representation",
         },
     )
-    with urllib.request.urlopen(req, timeout=10) as resp:
-        rows = json.loads(resp.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            rows = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", "replace")
+        raise HTTPException(status_code=502, detail=f"Supabase insert failed ({e.code}): {body}")
+    except urllib.error.URLError as e:
+        raise HTTPException(status_code=502, detail=f"Supabase unreachable: {e.reason}")
     return rows[0] if rows else entry
 
 
 def _supabase_select() -> list:
+    import urllib.error
     import urllib.request
 
     url = f"{SUPABASE_URL}/rest/v1/answers?select=*&order=at.asc"
@@ -78,8 +86,14 @@ def _supabase_select() -> list:
             "Authorization": f"Bearer {SUPABASE_KEY}",
         },
     )
-    with urllib.request.urlopen(req, timeout=10) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", "replace")
+        raise HTTPException(status_code=502, detail=f"Supabase select failed ({e.code}): {body}")
+    except urllib.error.URLError as e:
+        raise HTTPException(status_code=502, detail=f"Supabase unreachable: {e.reason}")
 
 
 def _local_read() -> list:
@@ -115,6 +129,16 @@ def home():
 @app.get("/api/health")
 def health():
     return {"ok": True, "storage": _storage_name()}
+
+
+@app.get("/api/debug")
+def debug():
+    """Safe diagnostics: shows config shape without leaking the key."""
+    return {
+        "supabase_configured": _using_supabase(),
+        "url": SUPABASE_URL or None,
+        "key_prefix": (SUPABASE_KEY[:10] + "…") if SUPABASE_KEY else None,
+    }
 
 
 @app.post("/api/answer")
