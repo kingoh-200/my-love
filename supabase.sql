@@ -24,3 +24,10 @@ create policy "allow anonymous reads"
   on answers for select
   to anon
   using (true);
+
+drop policy if exists "allow anonymous updates" on answers;
+create policy "allow anonymous updates"
+  on answers for update
+  to anon
+  using (true)
+  with check (true);
