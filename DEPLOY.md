@@ -21,29 +21,10 @@ GitHub repo (this project)
 
 1. Go to **https://supabase.com** → **Start your project** → sign in with GitHub.
 2. **New project** → name it (e.g. `ask-her-out`), pick a region near you, set a DB password (save it somewhere).
-3. When the dashboard opens, click **SQL Editor** (left sidebar) → **New query**, paste this, and **Run**:
+3. When the dashboard opens, click **SQL Editor** (left sidebar) → **New query**.
+   Open the **`supabase.sql`** file in this repo, copy **all of it** (it's pure SQL — no markdown), paste, and **Run**. It creates the `answers` table with row-level-security policies that allow anyone to insert and read answers, nothing else.
 
-```sql
-create table if not exists answers (
-  id bigint generated always as identity primary key,
-  accepted boolean not null,
-  reason text not null default '',
-  at timestamptz not null default now(),
-  created_at timestamptz not null default now()
-);
-
-alter table answers enable row level security;
-
-create policy "allow anonymous inserts"
-  on answers for insert
-  to anon
-  with check (true);
-
-create policy "allow anonymous reads"
-  on answers for select
-  to anon
-  using (true);
-```
+   > ⚠️ Copy only the contents of `supabase.sql` — not this guide. Markdown headings like `# 🚀 Deploy Guide` will fail with a syntax error.
 
 4. Get your credentials: **Project Settings → API**:
    - **Project URL** → this is `SUPABASE_URL`
