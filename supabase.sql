@@ -7,9 +7,13 @@ create table if not exists answers (
   id bigint generated always as identity primary key,
   accepted boolean not null,
   reason text not null default '',
+  date_text text not null default '',
   at timestamptz not null default now(),
   created_at timestamptz not null default now()
 );
+
+-- For databases created before this column existed:
+alter table answers add column if not exists date_text text not null default '';
 
 alter table answers enable row level security;
 

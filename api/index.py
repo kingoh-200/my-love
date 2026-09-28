@@ -68,6 +68,7 @@ app.add_middleware(
 class Answer(BaseModel):
     accepted: bool
     reason: str = ""
+    date_text: str = ""
     at: str = ""
     row_id: Optional[int] = None
 
@@ -208,11 +209,13 @@ def debug():
 def log_answer(answer: Answer):
     now = datetime.now(timezone.utc).isoformat()
 
-    # Follow-up: attach her date-idea choice to the row created on Yes.
+    # Follow-up: attach her date-idea choice and/or availability to the Yes row.
     if answer.row_id is not None:
         fields = {}
         if answer.reason:
             fields["reason"] = answer.reason
+        if answer.date_text:
+            fields["date_text"] = answer.date_text
         if fields:
             fields["at"] = answer.at or now
             if _using_supabase():

@@ -175,6 +175,76 @@ function Question({ onYes }) {
   );
 }
 
+function Confirm({ onReallyYes, onRethink }) {
+  return (
+    <div className="stage">
+      <h2 className="title">WAIT… really?! 😳</h2>
+      <p className="subtitle">Did you really say yes? Because my heart just did a backflip.</p>
+      <div className="card confirm-card">
+        <p className="big-heart">😳💖</p>
+        <div className="buttons confirm-buttons">
+          <button type="button" className="btn yes" onClick={onReallyYes}>
+            Yes, really! 💘
+          </button>
+          <button type="button" className="btn rethink" onClick={onRethink}>
+            Wait, let me rethink 🙈
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const DAY_OPTIONS = [
+  "This Saturday 🎉",
+  "This Sunday 😌",
+  "Next Friday 🌆",
+  "Next weekend 🗓️",
+  "I'm flexible 😉",
+];
+
+function WhenFree({ onPick }) {
+  const [picked, setPicked] = useState(null);
+
+  const pick = (value) => {
+    setPicked(value);
+    onPick(value);
+  };
+
+  return (
+    <div className="stage">
+      <h2 className="title">When are you free? 📅</h2>
+      <p className="subtitle">Pick a day and I'll make it unforgettable.</p>
+      <div className="card when-card">
+        <div className="chips day-grid">
+          {DAY_OPTIONS.map((day) => (
+            <button
+              key={day}
+              type="button"
+              className={`chip ${picked === day ? "chip-selected" : ""}`}
+              onClick={() => pick(day)}
+            >
+              {day}
+            </button>
+          ))}
+        </div>
+        <div className="date-row">
+          <label htmlFor="date-input">or choose an exact date:</label>
+          <input
+            id="date-input"
+            type="date"
+            className="date-input"
+            onChange={(e) => {
+              if (e.target.value) pick(e.target.value);
+            }}
+          />
+        </div>
+        {picked && <p className="chosen">Locked in! One moment… ✨</p>}
+      </div>
+    </div>
+  );
+}
+
 function Confetti() {
   const pieces = useMemo(() => {
     const rand = mulberry32(42);
@@ -228,10 +298,28 @@ export default function App() {
   };
 
   const handleYes = async () => {
+    setStage("confirm");
+    if (rowIdRef.current == null) {
+      const id = await postAnswer({ accepted: true });
+      if (id != null) rowIdRef.current = id;
+    }
+  };
+
+  const handleReallyYes = () => setStage("when");
+
+  const handleRethink = () => {
+    rowIdRef.current = null;
+    setStage("question");
+  };
+
+  const handleWhenPicked = async (value) => {
     setStage("celebration");
     if (rowIdRef.current == null) {
       const id = await postAnswer({ accepted: true });
       if (id != null) rowIdRef.current = id;
+    }
+    if (rowIdRef.current != null) {
+      postAnswer({ accepted: true, date_text: value, row_id: rowIdRef.current });
     }
   };
 
@@ -248,6 +336,24 @@ export default function App() {
       }, 1500);
     }
   };
+
+  if (stage === "confirm") {
+    return (
+      <div className="app">
+        <HeartsRain count={30} />
+        <Confirm onReallyYes={handleReallyYes} onRethink={handleRethink} />
+      </div>
+    );
+  }
+
+  if (stage === "when") {
+    return (
+      <div className="app">
+        <HeartsRain />
+        <WhenFree onPick={handleWhenPicked} />
+      </div>
+    );
+  }
 
   if (stage === "envelope") {
     return (
