@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 import Admin from "./Admin.jsx";
 
@@ -413,11 +413,47 @@ export default function App() {
   return <AskHerOut />;
 }
 
+function NotFound() {
+  return (
+    <div className="app">
+      <HeartsRain count={10} />
+      <div className="stage">
+        <h2 className="title">404 💌</h2>
+        <p className="subtitle">
+          This letter isn't addressed to anyone — no invite found for this link.
+        </p>
+        <div className="card notfound-card">
+          <p className="big-heart">🔍</p>
+          <p>Double-check the link you were sent, or ask for a fresh one.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AskHerOut() {
   const [stage, setStage] = useState("envelope");
   const [chosen, setChosen] = useState(null);
   const [person] = useState(personFromUrl);
+  const [inviteState, setInviteState] = useState(person ? "checking" : "open");
   const rowIdRef = useRef(null);
+
+  // Personal links only work when the name was issued from the dashboard;
+  // hand-edited URLs land on the not-found page.
+  useEffect(() => {
+    let cancelled = false;
+    if (!person) return;
+    fetch(`/api/invite/${encodeURIComponent(person)}`)
+      .then((res) => {
+        if (!cancelled) setInviteState(res.ok ? "valid" : "invalid");
+      })
+      .catch(() => {
+        if (!cancelled) setInviteState("invalid");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [person]);
 
   const postAnswer = async (payload) => {
     try {
@@ -475,6 +511,21 @@ function AskHerOut() {
       }, 1500);
     }
   };
+
+  if (inviteState === "checking") {
+    return (
+      <div className="app">
+        <HeartsRain count={8} />
+        <div className="stage">
+          <p className="hint">sealing the envelope… 💌</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (inviteState === "invalid") {
+    return <NotFound />;
+  }
 
   if (stage === "envelope") {
     return (

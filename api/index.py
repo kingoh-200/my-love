@@ -1,5 +1,6 @@
 import json
 import os
+import urllib.parse
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -61,6 +62,9 @@ ALLOWED_ORIGINS = [
 ]
 
 ADMIN_PASSCODE = os.environ.get("ADMIN_PASSCODE", "")
+
+INVITES_URL = "invites"
+ANSWERS_URL = "answers"
 
 
 def _make_token() -> str:
@@ -380,3 +384,162 @@ def admin_delete_response(row_id: int, authorization: str = Header(default="")):
         entries = [e for e in _local_read() if e.get("id") != row_id]
         _local_write(entries)
     return {"ok": True, "deleted": row_id}
+
+
+# ---------------------------------------------------------------------------
+# Invites: only admin-created names resolve at /i/<name>
+# ---------------------------------------------------------------------------
+def _rest_delete(table: str, query: str) -> None:
+    import urllib.error
+    import urllib.request
+
+    url = f"{SUPABASE_URL}/rest/v1/{table}?{query}"
+    req = urllib.request.Request(
+        url,
+        method="DELETE",
+        headers={
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10):
+            pass
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", "replace")
+        raise HTTPException(status_code=502, detail=f"Supabase delete failed ({e.code}): {body}")
+    except urllib.error.URLError as e:
+        raise HTTPException(status_code=502, detail=f"Supabase unreachable: {e.reason}")
+
+
+def _rest_insert(table: str, entry: dict) -> dict:
+    import urllib.error
+    import urllib.request
+
+    url = f"{SUPABASE_URL}/rest/v1/{table}"
+    data = json.dumps(entry).encode("utf-8")
+    req = urllib.request.Request(
+        url,
+        data=data,
+        method="POST",
+        headers={
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Content-Type": "application/json",
+            "Prefer": "return=representation",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            rows = json.loads(resp.read().decode("utf-8"))
+        return rows[0] if rows else entry
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", "replace")
+        raise HTTPException(status_code=502, detail=f"Supabase insert failed ({e.code}): {body}")
+    except urllib.error.URLError as e:
+        raise HTTPException(status_code=502, detail=f"Supabase unreachable: {e.reason}")
+
+
+def _rest_select(table: str, query: str = "select=*") -> list:
+    import urllib.error
+    import urllib.request
+
+    url = f"{SUPABASE_URL}/rest/v1/{table}?{query}"
+    req = urllib.request.Request(
+        url,
+        method="GET",
+        headers={
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", "replace")
+        raise HTTPException(status_code=502, detail=f"Supabase select failed ({e.code}): {body}")
+    except urllib.error.URLError as e:
+        raise HTTPException(status_code=502, detail=f"Supabase unreachable: {e.reason}")
+
+
+def _invite_read() -> list:
+    try:
+        with open(
+            os.path.join(os.path.dirname(FALLBACK_FILE), "invites.json"), encoding="utf-8"
+        ) as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return []
+
+
+def _invite_write(entries: list) -> None:
+    path = os.path.join(os.path.dirname(FALLBACK_FILE), "invites.json")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(entries, f, indent=2, ensure_ascii=False)
+
+
+def _invite_valid(name: str) -> bool:
+    lowered = (name or "").strip().lower()
+    if not lowered:
+        return False
+    if _using_supabase():
+        rows = _rest_select(INVITES_URL, f"select=name&name=eq.{urllib.parse.quote(lowered)}")
+        return len(rows) > 0
+    return any(e.get("name", "").lower() == lowered for e in _invite_read())
+
+
+@app.get("/api/invite/{name}")
+def check_invite(name: str):
+    """Public: does this personal link exist? Invalid names get a 404 so
+    hand-edited URLs land on the not-found page."""
+    if not _invite_valid(name):
+        raise HTTPException(status_code=404, detail="Invite not found")
+    return {"ok": True}
+
+
+@app.get("/api/admin/invites")
+def admin_list_invites(authorization: str = Header(default="")):
+    token = authorization.removeprefix("Bearer ").strip()
+    if not _verify_token(token):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    if _using_supabase():
+        rows = _rest_select(INVITES_URL, "select=*&order=created_at.asc")
+    else:
+        rows = _invite_read()
+    return {"invites": rows}
+
+
+@app.post("/api/admin/invites")
+def admin_create_invite(body: dict, authorization: str = Header(default="")):
+    token = authorization.removeprefix("Bearer ").strip()
+    if not _verify_token(token):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    name = str(body.get("name", "")).strip()
+    if not name or len(name) > 60:
+        raise HTTPException(status_code=400, detail="Name must be 1-60 characters")
+    if _using_supabase():
+        row = _rest_insert(INVITES_URL, {"name": name.lower()})
+    else:
+        entries = _invite_read()
+        if any(e.get("name", "").lower() == name.lower() for e in entries):
+            row = {"name": name.lower()}
+        else:
+            row = {"id": len(entries) + 1, "name": name.lower()}
+            entries.append(row)
+            _invite_write(entries)
+    return {"ok": True, "invite": row}
+
+
+@app.delete("/api/admin/invites/{name}")
+def admin_delete_invite(name: str, authorization: str = Header(default="")):
+    token = authorization.removeprefix("Bearer ").strip()
+    if not _verify_token(token):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    lowered = name.lower()
+    if _using_supabase():
+        _rest_delete(INVITES_URL, f"name=eq.{urllib.parse.quote(lowered)}")
+    else:
+        _invite_write([e for e in _invite_read() if e.get("name", "").lower() != lowered])
+    return {"ok": True, "deleted": lowered}

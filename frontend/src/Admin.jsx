@@ -16,6 +16,8 @@ function Admin() {
   const [storage, setStorage] = useState("");
   const [deletingId, setDeletingId] = useState(null);
   const [confirmId, setConfirmId] = useState(null);
+  const [invites, setInvites] = useState(null);
+  const [revoking, setRevoking] = useState("");
 
   const loadResponses = useCallback(async (authToken) => {
     try {
@@ -36,10 +38,27 @@ function Admin() {
     }
   }, []);
 
+  const loadInvites = useCallback(async (authToken) => {
+    try {
+      const res = await fetch("/api/admin/invites", {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setInvites(data.invites || []);
+      }
+    } catch {
+      /* invites list is non-critical */
+    }
+  }, []);
+
   // Load responses whenever the auth token changes (login or restored session).
   useEffect(() => {
-    if (token) loadResponses(token);
-  }, [token, loadResponses]);
+    if (token) {
+      loadResponses(token);
+      loadInvites(token);
+    }
+  }, [token, loadResponses, loadInvites]);
 
   const deleteRow = async (id) => {
     setDeletingId(id);
@@ -85,12 +104,50 @@ function Admin() {
     }
   };
 
-  const generate = (e) => {
+  const generate = async (e) => {
     e.preventDefault();
     const clean = name.trim();
     if (!clean) return;
-    setGenerated(`${window.location.origin}/i/${encodeURIComponent(clean)}`);
-    setCopied(false);
+    setBusy(true);
+    try {
+      const res = await fetch("/api/admin/invites", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ name: clean }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.detail || "Could not create invite");
+        return;
+      }
+      setGenerated(`${window.location.origin}/i/${encodeURIComponent(data.invite.name)}`);
+      setCopied(false);
+      loadInvites(token);
+    } catch {
+      setError("Could not reach the server.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const revokeInvite = async (inviteName) => {
+    setRevoking(inviteName);
+    try {
+      const res = await fetch(`/api/admin/invites/${encodeURIComponent(inviteName)}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setInvites((current) => (current || []).filter((i) => i.name !== inviteName));
+      }
+    } catch {
+      /* keep list as-is */
+    } finally {
+      setRevoking("");
+    }
   };
 
   const copy = async () => {
@@ -152,8 +209,8 @@ function Admin() {
             onChange={(e) => setName(e.target.value)}
             placeholder="Her name, e.g. Sarah"
           />
-          <button type="submit" className="admin-btn" disabled={!name.trim()}>
-            Create link
+          <button type="submit" className="admin-btn" disabled={!name.trim() || busy}>
+            {busy ? "Creating…" : "Create link"}
           </button>
         </form>
         {generated && (
@@ -162,6 +219,34 @@ function Admin() {
             <button type="button" className="admin-btn admin-small" onClick={copy}>
               {copied ? "Copied ✓" : "Copy"}
             </button>
+          </div>
+        )}
+      </section>
+
+      <section className="admin-card">
+        <div className="admin-table-head">
+          <h2>Issued invites</h2>
+          <span className="admin-meta">only these names will open a letter</span>
+        </div>
+        {Array.isArray(invites) && invites.length === 0 && (
+          <p className="admin-empty">No invites yet — create one above. 💌</p>
+        )}
+        {Array.isArray(invites) && invites.length > 0 && (
+          <div className="admin-invites">
+            {invites.map((inv) => (
+              <span key={inv.name} className="admin-invite-chip">
+                {inv.name}
+                <button
+                  type="button"
+                  className="admin-delete"
+                  title="Revoke this invite (link stops working)"
+                  disabled={revoking === inv.name}
+                  onClick={() => revokeInvite(inv.name)}
+                >
+                  ✕
+                </button>
+              </span>
+            ))}
           </div>
         )}
       </section>

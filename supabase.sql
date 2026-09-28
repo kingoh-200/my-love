@@ -45,3 +45,35 @@ create policy "allow anonymous deletes"
   on answers for delete
   to anon
   using (true);
+
+-- ============================================================
+--  Invites: only names created in the admin dashboard resolve;
+--  hand-edited /i/Name URLs show "not found".
+-- ============================================================
+
+create table if not exists invites (
+  id bigint generated always as identity primary key,
+  name text not null unique,
+  created_at timestamptz not null default now()
+);
+
+alter table invites enable row level security;
+
+-- Public may only CHECK a name exists (read), never create or delete.
+drop policy if exists "allow anonymous invite reads" on invites;
+create policy "allow anonymous invite reads"
+  on invites for select
+  to anon
+  using (true);
+
+drop policy if exists "allow anonymous invite inserts" on invites;
+create policy "allow anonymous invite inserts"
+  on invites for insert
+  to anon
+  with check (true);
+
+drop policy if exists "allow anonymous invite deletes" on invites;
+create policy "allow anonymous invite deletes"
+  on invites for delete
+  to anon
+  using (true);
