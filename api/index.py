@@ -75,30 +75,44 @@ class Answer(BaseModel):
 
 
 def _supabase_update(row_id: int, fields: dict) -> list:
+    """PATCH a row, gracefully dropping fields whose columns don't exist yet
+    (PGRST204) so a pending migration never breaks the experience."""
+    import json as _json
+    import re
     import urllib.error
     import urllib.request
 
-    url = f"{SUPABASE_URL}/rest/v1/answers?id=eq.{int(row_id)}"
-    data = json.dumps(fields).encode("utf-8")
-    req = urllib.request.Request(
-        url,
-        data=data,
-        method="PATCH",
-        headers={
-            "apikey": SUPABASE_KEY,
-            "Authorization": f"Bearer {SUPABASE_KEY}",
-            "Content-Type": "application/json",
-            "Prefer": "return=representation",
-        },
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            return json.loads(resp.read().decode("utf-8"))
-    except urllib.error.HTTPError as e:
-        body = e.read().decode("utf-8", "replace")
-        raise HTTPException(status_code=502, detail=f"Supabase update failed ({e.code}): {body}")
-    except urllib.error.URLError as e:
-        raise HTTPException(status_code=502, detail=f"Supabase unreachable: {e.reason}")
+    remaining = dict(fields)
+    dropped = []
+    for _ in range(3):
+        if not remaining:
+            return []
+        url = f"{SUPABASE_URL}/rest/v1/answers?id=eq.{int(row_id)}"
+        data = _json.dumps(remaining).encode("utf-8")
+        req = urllib.request.Request(
+            url,
+            data=data,
+            method="PATCH",
+            headers={
+                "apikey": SUPABASE_KEY,
+                "Authorization": f"Bearer {SUPABASE_KEY}",
+                "Content-Type": "application/json",
+                "Prefer": "return=representation",
+            },
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                return json.loads(resp.read().decode("utf-8"))
+        except urllib.error.HTTPError as e:
+            body = e.read().decode("utf-8", "replace")
+            m = re.search(r"Could not find the '([a-zA-Z_]+)' column", body)
+            if e.code == 400 and m and m.group(1) in remaining:
+                dropped.append(remaining.pop(m.group(1)))
+                continue
+            raise HTTPException(status_code=502, detail=f"Supabase update failed ({e.code}): {body}")
+        except urllib.error.URLError as e:
+            raise HTTPException(status_code=502, detail=f"Supabase unreachable: {e.reason}")
+    return []
 
 
 # ---------------------------------------------------------------------------
