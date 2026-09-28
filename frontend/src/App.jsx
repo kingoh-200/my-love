@@ -392,7 +392,7 @@ function Confetti() {
 
 export default function App() {
   // Admin dashboard lives at /admin (or /i/admin if a link was mistyped).
-  if (/^\/i?\/admin\/?$/.test(window.location.pathname)) {
+  if (/^\/(i\/)?admin\/?$/.test(window.location.pathname)) {
     return <Admin />;
   }
 
