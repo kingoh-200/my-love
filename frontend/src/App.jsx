@@ -314,10 +314,11 @@ function WhenFree({ onPick }) {
     if (pickedDay) onPick(pickedDay, value);
   };
 
-  const label =
-    pickedDay && pickedTime
+  const label = pickedDay
+    ? pickedTime
       ? `${pickedDay} at ${pickedTime}`
-      : pickedDay || (pickedTime ? `Sometime at ${pickedTime}` : null);
+      : pickedDay
+    : null;
 
   return (
     <div className="stage">
