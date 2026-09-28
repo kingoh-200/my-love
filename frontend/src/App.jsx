@@ -300,27 +300,38 @@ const DAY_OPTIONS = [
 function WhenFree({ onPick }) {
   const [pickedDay, setPickedDay] = useState(null);
   const [pickedTime, setPickedTime] = useState("");
+  const [nudge, setNudge] = useState("");
+
+  const complete = Boolean(pickedDay && pickedTime);
 
   const pickDay = (value) => {
     setPickedDay(value);
-    onPick(value, pickedTime);
+    setNudge("");
+    if (pickedTime) onPick(value, pickedTime);
   };
 
   const pickTime = (value) => {
     setPickedTime(value);
+    setNudge("");
     if (pickedDay) onPick(pickedDay, value);
   };
 
-  const label = pickedDay
-    ? pickedTime
-      ? `${pickedDay} at ${pickedTime}`
-      : pickedDay
-    : null;
+  const tryFinish = () => {
+    if (pickedDay && pickedTime) {
+      onPick(pickedDay, pickedTime);
+    } else if (pickedDay && !pickedTime) {
+      setNudge("Almost! What time works for you? ⏰");
+    } else if (!pickedDay && pickedTime) {
+      setNudge("Almost! Which day should I keep free? 📅");
+    }
+  };
+
+  const label = complete ? `${pickedDay} at ${pickedTime}` : null;
 
   return (
     <div className="stage">
       <h2 className="title">When are you free? 📅</h2>
-      <p className="subtitle">Pick a day (and a time if you're brave) — I'll handle the rest.</p>
+      <p className="subtitle">Pick a day and a time — both, so I can plan this properly 😉</p>
       <div className="card when-card">
         <div className="chips day-grid">
           {DAY_OPTIONS.map((day) => (
@@ -352,7 +363,10 @@ function WhenFree({ onPick }) {
               onChange={(e) => pickTime(e.target.value)}
             />
           </div>
-          <p className="time-hint">time optional — but dinner needs a reservation 😌</p>
+          <button type="button" className="btn yes confirm-btn" onClick={tryFinish} disabled={!pickedDay || !pickedTime}>
+            Lock it in 🔒
+          </button>
+          {nudge && <p className="time-hint nudge-text">{nudge}</p>}
         </div>
         {label && <p className="chosen">Locked in: {label} ✨</p>}
       </div>

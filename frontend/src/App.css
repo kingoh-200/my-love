@@ -483,6 +483,23 @@
   opacity: 0.7;
 }
 
+.confirm-btn {
+  margin-top: 4px;
+}
+
+.confirm-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.nudge-text {
+  color: var(--pink-deep);
+  font-weight: 600;
+  opacity: 1;
+}
+
 .date-input {
   border: 2px solid var(--border);
   border-radius: 12px;
