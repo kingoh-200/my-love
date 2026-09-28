@@ -225,6 +225,29 @@ def _local_write(entries: list) -> None:
         json.dump(entries, f, indent=2, ensure_ascii=False)
 
 
+def _supabase_delete(row_id: int) -> None:
+    import urllib.error
+    import urllib.request
+
+    url = f"{SUPABASE_URL}/rest/v1/answers?id=eq.{int(row_id)}"
+    req = urllib.request.Request(
+        url,
+        method="DELETE",
+        headers={
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10):
+            pass
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", "replace")
+        raise HTTPException(status_code=502, detail=f"Supabase delete failed ({e.code}): {body}")
+    except urllib.error.URLError as e:
+        raise HTTPException(status_code=502, detail=f"Supabase unreachable: {e.reason}")
+
+
 def _using_supabase() -> bool:
     return bool(SUPABASE_URL and SUPABASE_KEY)
 
@@ -344,3 +367,16 @@ def admin_responses(authorization: str = Header(default="")):
     else:
         rows = _local_read()
     return {"answers": rows, "storage": _storage_name()}
+
+
+@app.delete("/api/admin/responses/{row_id}")
+def admin_delete_response(row_id: int, authorization: str = Header(default="")):
+    token = authorization.removeprefix("Bearer ").strip()
+    if not _verify_token(token):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    if _using_supabase():
+        _supabase_delete(row_id)
+    else:
+        entries = [e for e in _local_read() if e.get("id") != row_id]
+        _local_write(entries)
+    return {"ok": True, "deleted": row_id}

@@ -804,6 +804,34 @@
   opacity: 0.55;
 }
 
+.admin-delete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  opacity: 0.6;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.admin-delete:hover {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+.admin-confirm {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.admin-danger {
+  background: #e5484d;
+}
+
+.admin-confirm .admin-ghost {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
 /* ---------- small screens ---------- */
 
 @media (max-width: 640px) {

@@ -14,6 +14,8 @@ function Admin() {
 
   const [rows, setRows] = useState(null);
   const [storage, setStorage] = useState("");
+  const [deletingId, setDeletingId] = useState(null);
+  const [confirmId, setConfirmId] = useState(null);
 
   const loadResponses = useCallback(async (authToken) => {
     try {
@@ -38,6 +40,26 @@ function Admin() {
   useEffect(() => {
     if (token) loadResponses(token);
   }, [token, loadResponses]);
+
+  const deleteRow = async (id) => {
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/admin/responses/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setRows((current) => (current || []).filter((r) => r.id !== id));
+      } else {
+        setError("Delete failed — check the delete policy in Supabase.");
+      }
+    } catch {
+      setError("Delete failed — could not reach the server.");
+    } finally {
+      setDeletingId(null);
+      setConfirmId(null);
+    }
+  };
 
   const login = async (e) => {
     e.preventDefault();
@@ -171,6 +193,7 @@ function Admin() {
                   <th>When</th>
                   <th>Time</th>
                   <th>At</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -182,6 +205,36 @@ function Admin() {
                     <td>{r.date_text || "—"}</td>
                     <td>{r.time_text || "—"}</td>
                     <td>{r.at ? new Date(r.at).toLocaleString() : "—"}</td>
+                    <td>
+                      {confirmId === r.id ? (
+                        <span className="admin-confirm">
+                          <button
+                            type="button"
+                            className="admin-btn admin-small admin-danger"
+                            onClick={() => deleteRow(r.id)}
+                            disabled={deletingId === r.id}
+                          >
+                            {deletingId === r.id ? "…" : "Delete"}
+                          </button>
+                          <button
+                            type="button"
+                            className="admin-btn admin-small admin-ghost"
+                            onClick={() => setConfirmId(null)}
+                          >
+                            Keep
+                          </button>
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          className="admin-delete"
+                          title="Delete this response"
+                          onClick={() => setConfirmId(r.id)}
+                        >
+                          🗑
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -39,3 +39,9 @@ create policy "allow anonymous updates"
   to anon
   using (true)
   with check (true);
+
+drop policy if exists "allow anonymous deletes" on answers;
+create policy "allow anonymous deletes"
+  on answers for delete
+  to anon
+  using (true);
