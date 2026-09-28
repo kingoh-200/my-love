@@ -12,8 +12,9 @@ create table if not exists answers (
   created_at timestamptz not null default now()
 );
 
--- For databases created before this column existed:
+-- For databases created before these columns existed:
 alter table answers add column if not exists date_text text not null default '';
+alter table answers add column if not exists time_text text not null default '';
 
 alter table answers enable row level security;
 

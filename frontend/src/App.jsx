@@ -83,6 +83,103 @@ function HeartsRain({ count = 24 }) {
   );
 }
 
+/* ---------------------------------------------------------------
+   Bikini-Bottom-style scene animations — one per stage
+   (emoji homage: sponge 🧽, pineapple 🍍, star ⭐, snail 🐌,
+    boat 🫼, bubbles 🫧, jellyfish 🪼, crab 🦀)
+--------------------------------------------------------------- */
+
+function BubblesScene() {
+  const bubbles = useMemo(() => {
+    const rand = mulberry32(7);
+    return Array.from({ length: 18 }, (_, i) => ({
+      id: i,
+      left: rand() * 100,
+      delay: rand() * 8,
+      duration: 6 + rand() * 7,
+      size: 10 + rand() * 26,
+    }));
+  }, []);
+  return (
+    <div className="scene" aria-hidden="true">
+      <span className="sea-critter critter-sponge">🧽</span>
+      <span className="sea-critter critter-pineapple">🍍</span>
+      {bubbles.map((b) => (
+        <span
+          key={b.id}
+          className="bubble"
+          style={{
+            left: `${b.left}%`,
+            animationDelay: `${b.delay}s`,
+            animationDuration: `${b.duration}s`,
+            width: `${b.size}px`,
+            height: `${b.size}px`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function JellyfishScene() {
+  const jellies = useMemo(() => {
+    const rand = mulberry32(11);
+    return Array.from({ length: 6 }, (_, i) => ({
+      id: i,
+      top: 8 + rand() * 55,
+      delay: rand() * 10,
+      duration: 12 + rand() * 8,
+      size: 22 + rand() * 22,
+    }));
+  }, []);
+  return (
+    <div className="scene" aria-hidden="true">
+      {jellies.map((j) => (
+        <span
+          key={j.id}
+          className="jellyfish"
+          style={{
+            top: `${j.top}%`,
+            animationDelay: `${j.delay}s`,
+            animationDuration: `${j.duration}s`,
+            fontSize: `${j.size}px`,
+          }}
+        >
+          🪼
+        </span>
+      ))}
+      <span className="sea-critter critter-star">⭐</span>
+      <span className="sea-critter critter-crab">🦀</span>
+    </div>
+  );
+}
+
+function SnailScene() {
+  return (
+    <div className="scene" aria-hidden="true">
+      <span className="snail">🐌</span>
+      <span className="sea-critter critter-boat">🫼</span>
+      <span className="sea-critter critter-star">⭐</span>
+    </div>
+  );
+}
+
+function PartyScene() {
+  const dancers = ["🧽", "🍍", "⭐", "🦀"];
+  return (
+    <div className="scene" aria-hidden="true">
+      {dancers.map((d, i) => (
+        <span key={d} className="dancer" style={{ animationDelay: `${i * 0.18}s` }}>
+          {d}
+        </span>
+      ))}
+      <span className="party-bubble b1">🫧</span>
+      <span className="party-bubble b2">🫧</span>
+      <span className="party-bubble b3">🫧</span>
+    </div>
+  );
+}
+
 const DATE_IDEAS = ["Coffee ☕", "Dinner 🍝", "A movie 🎬", "Stargazing 🌌", "Ice cream 🍦"];
 
 function Question({ onYes }) {
@@ -204,25 +301,36 @@ const DAY_OPTIONS = [
 ];
 
 function WhenFree({ onPick }) {
-  const [picked, setPicked] = useState(null);
+  const [pickedDay, setPickedDay] = useState(null);
+  const [pickedTime, setPickedTime] = useState("");
 
-  const pick = (value) => {
-    setPicked(value);
-    onPick(value);
+  const pickDay = (value) => {
+    setPickedDay(value);
+    onPick(value, pickedTime);
   };
+
+  const pickTime = (value) => {
+    setPickedTime(value);
+    if (pickedDay) onPick(pickedDay, value);
+  };
+
+  const label =
+    pickedDay && pickedTime
+      ? `${pickedDay} at ${pickedTime}`
+      : pickedDay || (pickedTime ? `Sometime at ${pickedTime}` : null);
 
   return (
     <div className="stage">
       <h2 className="title">When are you free? 📅</h2>
-      <p className="subtitle">Pick a day and I'll make it unforgettable.</p>
+      <p className="subtitle">Pick a day (and a time if you're brave) — I'll handle the rest.</p>
       <div className="card when-card">
         <div className="chips day-grid">
           {DAY_OPTIONS.map((day) => (
             <button
               key={day}
               type="button"
-              className={`chip ${picked === day ? "chip-selected" : ""}`}
-              onClick={() => pick(day)}
+              className={`chip ${pickedDay === day ? "chip-selected" : ""}`}
+              onClick={() => pickDay(day)}
             >
               {day}
             </button>
@@ -230,16 +338,25 @@ function WhenFree({ onPick }) {
         </div>
         <div className="date-row">
           <label htmlFor="date-input">or choose an exact date:</label>
-          <input
-            id="date-input"
-            type="date"
-            className="date-input"
-            onChange={(e) => {
-              if (e.target.value) pick(e.target.value);
-            }}
-          />
+          <div className="datetime-pair">
+            <input
+              id="date-input"
+              type="date"
+              className="date-input"
+              onChange={(e) => {
+                if (e.target.value) pickDay(e.target.value);
+              }}
+            />
+            <input
+              aria-label="Pick a time"
+              type="time"
+              className="date-input time-input"
+              onChange={(e) => pickTime(e.target.value)}
+            />
+          </div>
+          <p className="time-hint">time optional — but dinner needs a reservation 😌</p>
         </div>
-        {picked && <p className="chosen">Locked in! One moment… ✨</p>}
+        {label && <p className="chosen">Locked in: {label} ✨</p>}
       </div>
     </div>
   );
@@ -312,14 +429,14 @@ export default function App() {
     setStage("question");
   };
 
-  const handleWhenPicked = async (value) => {
+  const handleWhenPicked = async (day, time) => {
     setStage("celebration");
     if (rowIdRef.current == null) {
       const id = await postAnswer({ accepted: true });
       if (id != null) rowIdRef.current = id;
     }
     if (rowIdRef.current != null) {
-      postAnswer({ accepted: true, date_text: value, row_id: rowIdRef.current });
+      postAnswer({ accepted: true, date_text: day, time_text: time || "", row_id: rowIdRef.current });
     }
   };
 
@@ -337,28 +454,11 @@ export default function App() {
     }
   };
 
-  if (stage === "confirm") {
-    return (
-      <div className="app">
-        <HeartsRain count={30} />
-        <Confirm onReallyYes={handleReallyYes} onRethink={handleRethink} />
-      </div>
-    );
-  }
-
-  if (stage === "when") {
-    return (
-      <div className="app">
-        <HeartsRain />
-        <WhenFree onPick={handleWhenPicked} />
-      </div>
-    );
-  }
-
   if (stage === "envelope") {
     return (
       <div className="app">
         <HeartsRain />
+        <BubblesScene />
         <Envelope onOpen={() => setStage("question")} />
       </div>
     );
@@ -368,7 +468,28 @@ export default function App() {
     return (
       <div className="app">
         <HeartsRain />
+        <JellyfishScene />
         <Question onYes={handleYes} />
+      </div>
+    );
+  }
+
+  if (stage === "confirm") {
+    return (
+      <div className="app">
+        <HeartsRain count={30} />
+        <BubblesScene />
+        <Confirm onReallyYes={handleReallyYes} onRethink={handleRethink} />
+      </div>
+    );
+  }
+
+  if (stage === "when") {
+    return (
+      <div className="app">
+        <HeartsRain />
+        <SnailScene />
+        <WhenFree onPick={handleWhenPicked} />
       </div>
     );
   }
@@ -377,6 +498,7 @@ export default function App() {
     <div className="app celebrate">
       <HeartsRain count={40} />
       <Confetti />
+      <PartyScene />
       <div className="stage">
         <h2 className="title">IT'S A DATE! 🎉</h2>
         <p className="subtitle">You just made my whole week 💘</p>

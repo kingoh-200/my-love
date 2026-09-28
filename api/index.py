@@ -69,6 +69,7 @@ class Answer(BaseModel):
     accepted: bool
     reason: str = ""
     date_text: str = ""
+    time_text: str = ""
     at: str = ""
     row_id: Optional[int] = None
 
@@ -216,6 +217,8 @@ def log_answer(answer: Answer):
             fields["reason"] = answer.reason
         if answer.date_text:
             fields["date_text"] = answer.date_text
+        if answer.time_text:
+            fields["time_text"] = answer.time_text
         if fields:
             fields["at"] = answer.at or now
             if _using_supabase():
