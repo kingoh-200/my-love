@@ -120,31 +120,42 @@ def _supabase_update(row_id: int, fields: dict) -> list:
 # Storage: Supabase (Postgres) when configured, local JSON file otherwise
 # ---------------------------------------------------------------------------
 def _supabase_insert(entry: dict) -> dict:
+    """Insert a row, gracefully dropping fields whose columns don't exist yet
+    (PGRST204) so a pending migration never blocks a Yes."""
+    import json as _json
+    import re
     import urllib.error
     import urllib.request
 
-    url = f"{SUPABASE_URL}/rest/v1/answers"
-    data = json.dumps(entry).encode("utf-8")
-    req = urllib.request.Request(
-        url,
-        data=data,
-        method="POST",
-        headers={
-            "apikey": SUPABASE_KEY,
-            "Authorization": f"Bearer {SUPABASE_KEY}",
-            "Content-Type": "application/json",
-            "Prefer": "return=representation",
-        },
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            rows = json.loads(resp.read().decode("utf-8"))
-    except urllib.error.HTTPError as e:
-        body = e.read().decode("utf-8", "replace")
-        raise HTTPException(status_code=502, detail=f"Supabase insert failed ({e.code}): {body}")
-    except urllib.error.URLError as e:
-        raise HTTPException(status_code=502, detail=f"Supabase unreachable: {e.reason}")
-    return rows[0] if rows else entry
+    remaining = dict(entry)
+    for _ in range(4):
+        url = f"{SUPABASE_URL}/rest/v1/answers"
+        data = _json.dumps(remaining).encode("utf-8")
+        req = urllib.request.Request(
+            url,
+            data=data,
+            method="POST",
+            headers={
+                "apikey": SUPABASE_KEY,
+                "Authorization": f"Bearer {SUPABASE_KEY}",
+                "Content-Type": "application/json",
+                "Prefer": "return=representation",
+            },
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                rows = json.loads(resp.read().decode("utf-8"))
+            return rows[0] if rows else remaining
+        except urllib.error.HTTPError as e:
+            body = e.read().decode("utf-8", "replace")
+            m = re.search(r"Could not find the '([a-zA-Z_]+)' column", body)
+            if e.code == 400 and m and m.group(1) in remaining:
+                remaining.pop(m.group(1))
+                continue
+            raise HTTPException(status_code=502, detail=f"Supabase insert failed ({e.code}): {body}")
+        except urllib.error.URLError as e:
+            raise HTTPException(status_code=502, detail=f"Supabase unreachable: {e.reason}")
+    return remaining
 
 
 def _supabase_select() -> list:
