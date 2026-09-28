@@ -18,8 +18,10 @@ function Admin() {
   const [confirmId, setConfirmId] = useState(null);
   const [invites, setInvites] = useState(null);
   const [revoking, setRevoking] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
 
   const loadResponses = useCallback(async (authToken) => {
+    setRefreshing(true);
     try {
       const res = await fetch("/api/admin/responses", {
         headers: { Authorization: `Bearer ${authToken}` },
@@ -30,11 +32,19 @@ function Admin() {
         setError("Session expired — sign in again.");
         return;
       }
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setError(body.detail || "Could not load responses.");
+        return;
+      }
       const data = await res.json();
       setRows(data.answers || []);
       setStorage(data.storage || "");
+      setError("");
     } catch {
       setError("Could not load responses.");
+    } finally {
+      setRefreshing(false);
     }
   }, []);
 
@@ -256,8 +266,13 @@ function Admin() {
           <h2>Responses</h2>
           <span className="admin-meta">
             {storage === "supabase" ? "● live from Supabase" : "● local file"} ·{" "}
-            <button type="button" className="admin-refresh" onClick={() => loadResponses(token)}>
-              refresh
+            <button
+              type="button"
+              className="admin-refresh"
+              onClick={() => loadResponses(token)}
+              disabled={refreshing}
+            >
+              {refreshing ? "refreshing…" : "refresh"}
             </button>
           </span>
         </div>
