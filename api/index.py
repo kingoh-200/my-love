@@ -3,7 +3,11 @@ import os
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException
+import base64
+import hashlib
+import hmac
+
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -55,6 +59,32 @@ ALLOWED_ORIGINS = [
     ).split(",")
     if o.strip()
 ]
+
+ADMIN_PASSCODE = os.environ.get("ADMIN_PASSCODE", "")
+
+
+def _make_token() -> str:
+    """Time-limited signed token from the passcode (no server-side session)."""
+    expires = int((datetime.now(timezone.utc).timestamp() // 3600) + 24)  # ~24h validity
+    msg = f"admin:{expires}".encode()
+    sig = hmac.new(ADMIN_PASSCODE.encode(), msg, hashlib.sha256).hexdigest()[:32]
+    return base64.urlsafe_b64encode(f"{expires}:{sig}".encode()).decode()
+
+
+def _verify_token(token: str) -> bool:
+    if not ADMIN_PASSCODE or not token:
+        return False
+    try:
+        raw = base64.urlsafe_b64decode(token.encode()).decode()
+        expires_str, sig = raw.split(":", 1)
+        expires = int(expires_str)
+    except Exception:
+        return False
+    if expires * 3600 < datetime.now(timezone.utc).timestamp():
+        return False
+    msg = f"admin:{expires}".encode()
+    expected = hmac.new(ADMIN_PASSCODE.encode(), msg, hashlib.sha256).hexdigest()[:32]
+    return hmac.compare_digest(sig, expected)
 
 app.add_middleware(
     CORSMiddleware,
@@ -284,6 +314,31 @@ def log_answer(answer: Answer):
 
 @app.get("/api/answers")
 def get_answers():
+    if _using_supabase():
+        rows = _supabase_select()
+    else:
+        rows = _local_read()
+    return {"answers": rows, "storage": _storage_name()}
+
+
+# ---------------------------------------------------------------------------
+# Admin (passcode-gated)
+# ---------------------------------------------------------------------------
+@app.post("/api/admin/login")
+def admin_login(body: dict):
+    code = str(body.get("passcode", ""))
+    if not ADMIN_PASSCODE:
+        raise HTTPException(status_code=503, detail="ADMIN_PASSCODE env var is not set")
+    if not hmac.compare_digest(code, ADMIN_PASSCODE):
+        raise HTTPException(status_code=401, detail="Wrong passcode")
+    return {"ok": True, "token": _make_token()}
+
+
+@app.get("/api/admin/responses")
+def admin_responses(authorization: str = Header(default="")):
+    token = authorization.removeprefix("Bearer ").strip()
+    if not _verify_token(token):
+        raise HTTPException(status_code=401, detail="Unauthorized")
     if _using_supabase():
         rows = _supabase_select()
     else:

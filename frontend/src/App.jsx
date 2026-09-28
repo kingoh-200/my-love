@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import "./App.css";
+import Admin from "./Admin.jsx";
 
 // Who is this link for? Supports /i/Sarah and /?id=Sarah
 function personFromUrl() {
@@ -390,6 +391,15 @@ function Confetti() {
 }
 
 export default function App() {
+  // Admin dashboard lives at /admin (or /i/admin if a link was mistyped).
+  if (/^\/i?\/admin\/?$/.test(window.location.pathname)) {
+    return <Admin />;
+  }
+
+  return <AskHerOut />;
+}
+
+function AskHerOut() {
   const [stage, setStage] = useState("envelope");
   const [chosen, setChosen] = useState(null);
   const [person] = useState(personFromUrl);
