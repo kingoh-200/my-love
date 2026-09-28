@@ -70,6 +70,7 @@ class Answer(BaseModel):
     reason: str = ""
     date_text: str = ""
     time_text: str = ""
+    person: str = ""
     at: str = ""
     row_id: Optional[int] = None
 
@@ -233,6 +234,8 @@ def log_answer(answer: Answer):
             fields["date_text"] = answer.date_text
         if answer.time_text:
             fields["time_text"] = answer.time_text
+        if answer.person:
+            fields["person"] = answer.person
         if fields:
             fields["at"] = answer.at or now
             if _using_supabase():
@@ -254,6 +257,7 @@ def log_answer(answer: Answer):
     entry = {
         "accepted": answer.accepted,
         "reason": answer.reason,
+        "person": answer.person,
         "at": answer.at or now,
     }
     if _using_supabase():

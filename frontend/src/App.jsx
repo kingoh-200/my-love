@@ -1,6 +1,14 @@
 import { useMemo, useRef, useState } from "react";
 import "./App.css";
 
+// Who is this link for? Supports /i/Sarah and /?id=Sarah
+function personFromUrl() {
+  const m = window.location.pathname.match(/^\/i\/([^/]+)\/?$/);
+  if (m) return decodeURIComponent(m[1]);
+  const q = new URLSearchParams(window.location.search).get("id");
+  return q ? decodeURIComponent(q) : "";
+}
+
 const CONFETTI_COLORS = ["#ff5d8f", "#ffb3c6", "#ffd166", "#a0e7a0", "#8ecae6", "#c77dff"];
 
 // Tiny seeded PRNG so decorative randomness is stable across re-renders.
@@ -32,7 +40,7 @@ function Logo() {
   );
 }
 
-function Envelope({ onOpen }) {
+function Envelope({ onOpen, person }) {
   return (
     <div className="stage">
       <div className="envelope-scene">
@@ -44,6 +52,7 @@ function Envelope({ onOpen }) {
           <span className="glow" />
         </button>
       </div>
+      {person && <p className="addressed">for {person} 💕</p>}
       <p className="hint">tap to open 💌</p>
     </div>
   );
@@ -182,7 +191,7 @@ function PartyScene() {
 
 const DATE_IDEAS = ["Coffee ☕", "Dinner 🍝", "A movie 🎬", "Stargazing 🌌", "Ice cream 🍦"];
 
-function Question({ onYes }) {
+function Question({ onYes, person }) {
   const [noCount, setNoCount] = useState(0);
   const [noStyle, setNoStyle] = useState(null);
   const [flying, setFlying] = useState(null);
@@ -226,31 +235,18 @@ function Question({ onYes }) {
 
   return (
     <div className="stage">
-      <h2 className="title">Hey you 💕</h2>
+      <h2 className="title">{person ? `Hey ${person} 💕` : "Hey you 💕"}</h2>
       <p className="subtitle">There's something I've been meaning to ask…</p>
 
       <div className="card question-card">
         <p className="question">Will you go out with me?</p>
 
         <div className="buttons" ref={parentRef}>
-          <button
-            type="button"
-            className="btn yes"
-            style={{ transform: `scale(${yesScale})` }}
-            onClick={onYes}
-          >
+          <button type="button" className="btn yes" style={{ transform: `scale(${yesScale})` }} onClick={onYes}>
             Yes! 💖
           </button>
 
-          <button
-            type="button"
-            className="btn no"
-            style={noStyle ? { left: noStyle.left, top: noStyle.top, position: "fixed" } : undefined}
-            onMouseEnter={fleeNo}
-            onMouseDown={fleeNo}
-            onTouchStart={fleeNo}
-            onFocus={fleeNo}
-          >
+          <button type="button" className="btn no" style={noStyle ? { left: noStyle.left, top: noStyle.top, position: "fixed" } : undefined} onMouseEnter={fleeNo} onMouseDown={fleeNo} onTouchStart={fleeNo} onFocus={fleeNo}>
             No
           </button>
         </div>
@@ -272,10 +268,10 @@ function Question({ onYes }) {
   );
 }
 
-function Confirm({ onReallyYes, onRethink }) {
+function Confirm({ onReallyYes, onRethink, person }) {
   return (
     <div className="stage">
-      <h2 className="title">WAIT… really?! 😳</h2>
+      <h2 className="title">{person ? `WAIT… ${person}?! 😳` : "WAIT… really?! 😳"}</h2>
       <p className="subtitle">Did you really say yes? Because my heart just did a backflip.</p>
       <div className="card confirm-card">
         <p className="big-heart">😳💖</p>
@@ -396,6 +392,7 @@ function Confetti() {
 export default function App() {
   const [stage, setStage] = useState("envelope");
   const [chosen, setChosen] = useState(null);
+  const [person] = useState(personFromUrl);
   const rowIdRef = useRef(null);
 
   const postAnswer = async (payload) => {
@@ -403,7 +400,7 @@ export default function App() {
       const res = await fetch("/api/answer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...payload, at: new Date().toISOString() }),
+        body: JSON.stringify({ ...payload, person, at: new Date().toISOString() }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -460,7 +457,7 @@ export default function App() {
       <div className="app">
         <HeartsRain />
         <BubblesScene />
-        <Envelope onOpen={() => setStage("question")} />
+        <Envelope onOpen={() => setStage("question")} person={person} />
       </div>
     );
   }
@@ -470,7 +467,7 @@ export default function App() {
       <div className="app">
         <HeartsRain />
         <JellyfishScene />
-        <Question onYes={handleYes} />
+        <Question onYes={handleYes} person={person} />
       </div>
     );
   }
@@ -480,7 +477,7 @@ export default function App() {
       <div className="app">
         <HeartsRain count={30} />
         <BubblesScene />
-        <Confirm onReallyYes={handleReallyYes} onRethink={handleRethink} />
+        <Confirm onReallyYes={handleReallyYes} onRethink={handleRethink} person={person} />
       </div>
     );
   }

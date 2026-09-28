@@ -7,7 +7,9 @@ create table if not exists answers (
   id bigint generated always as identity primary key,
   accepted boolean not null,
   reason text not null default '',
+  person text not null default '',
   date_text text not null default '',
+  time_text text not null default '',
   at timestamptz not null default now(),
   created_at timestamptz not null default now()
 );
@@ -15,6 +17,7 @@ create table if not exists answers (
 -- For databases created before these columns existed:
 alter table answers add column if not exists date_text text not null default '';
 alter table answers add column if not exists time_text text not null default '';
+alter table answers add column if not exists person text not null default '';
 
 alter table answers enable row level security;
 
