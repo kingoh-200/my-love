@@ -230,6 +230,7 @@ def _local_write(entries: list) -> None:
 
 
 def _supabase_delete(row_id: int) -> None:
+    """Delete and verify: RLS can silently delete zero rows, so confirm."""
     import urllib.error
     import urllib.request
 
@@ -240,11 +241,17 @@ def _supabase_delete(row_id: int) -> None:
         headers={
             "apikey": SUPABASE_KEY,
             "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Prefer": "return=representation",
         },
     )
     try:
-        with urllib.request.urlopen(req, timeout=10):
-            pass
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            deleted = json.loads(resp.read().decode("utf-8"))
+            if not deleted:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Delete blocked by database policies — run the RLS delete policy SQL for answers",
+                )
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8", "replace")
         raise HTTPException(status_code=502, detail=f"Supabase delete failed ({e.code}): {body}")

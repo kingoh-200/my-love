@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
+import "@fortawesome/fontawesome-free/css/fontawesome.min.css";
+import "@fortawesome/fontawesome-free/css/solid.min.css";
 
 const TOKEN_KEY = "admin_token";
 
@@ -174,7 +176,7 @@ function Admin() {
     return (
       <div className="admin-wrap">
         <form className="admin-card admin-gate" onSubmit={login}>
-          <h1>🔒 Admin</h1>
+          <h1><i className="fa-solid fa-lock" aria-hidden="true" /> Admin</h1>
           <p>Enter the passcode to manage links and responses.</p>
           <input
             type="password"
@@ -198,7 +200,7 @@ function Admin() {
   return (
     <div className="admin-wrap">
       <header className="admin-header">
-        <h1>💘 Admin Dashboard</h1>
+        <h1><i className="fa-solid fa-heart" aria-hidden="true" /> Admin Dashboard</h1>
         <button
           type="button"
           className="admin-btn admin-ghost"
@@ -227,7 +229,15 @@ function Admin() {
           <div className="admin-link-row">
             <code>{generated}</code>
             <button type="button" className="admin-btn admin-small" onClick={copy}>
-              {copied ? "Copied ✓" : "Copy"}
+              {copied ? (
+                <>
+                  <i className="fa-solid fa-check" aria-hidden="true" /> Copied
+                </>
+              ) : (
+                <>
+                  <i className="fa-solid fa-copy" aria-hidden="true" /> Copy
+                </>
+              )}
             </button>
           </div>
         )}
@@ -239,7 +249,10 @@ function Admin() {
           <span className="admin-meta">only these names will open a letter</span>
         </div>
         {Array.isArray(invites) && invites.length === 0 && (
-          <p className="admin-empty">No invites yet — create one above. 💌</p>
+          <p className="admin-empty">
+            <i className="fa-solid fa-envelope" aria-hidden="true" /> No invites yet — create one
+            above.
+          </p>
         )}
         {Array.isArray(invites) && invites.length > 0 && (
           <div className="admin-invites">
@@ -253,7 +266,7 @@ function Admin() {
                   disabled={revoking === inv.name}
                   onClick={() => revokeInvite(inv.name)}
                 >
-                  ✕
+                  <i className="fa-solid fa-xmark" aria-hidden="true" />
                 </button>
               </span>
             ))}
@@ -272,14 +285,20 @@ function Admin() {
               onClick={() => loadResponses(token)}
               disabled={refreshing}
             >
-              {refreshing ? "refreshing…" : "refresh"}
+              <i
+                className={`fa-solid fa-arrows-rotate ${refreshing ? "fa-spin" : ""}`}
+                aria-hidden="true"
+              /> {refreshing ? "refreshing…" : "refresh"}
             </button>
           </span>
         </div>
 
         {rows === null && <p>Loading…</p>}
         {Array.isArray(rows) && rows.length === 0 && (
-          <p className="admin-empty">No responses yet. Send someone a link! 💌</p>
+          <p className="admin-empty">
+            <i className="fa-solid fa-envelope" aria-hidden="true" /> No responses yet. Send someone
+            a link!
+          </p>
         )}
 
         {Array.isArray(rows) && rows.length > 0 && (
@@ -300,7 +319,15 @@ function Admin() {
                 {[...answered, ...pending].map((r) => (
                   <tr key={r.id} className={r.accepted ? "row-yes" : "row-no"}>
                     <td>{r.person || "—"}</td>
-                    <td>{r.accepted ? "YES 💖" : "no"}</td>
+                    <td>
+                      {r.accepted ? (
+                        <>
+                          YES <i className="fa-solid fa-heart heart-ic" aria-hidden="true" />
+                        </>
+                      ) : (
+                        "no"
+                      )}
+                    </td>
                     <td>{r.reason || "—"}</td>
                     <td>{r.date_text || "—"}</td>
                     <td>{r.time_text || "—"}</td>
@@ -331,7 +358,7 @@ function Admin() {
                           title="Delete this response"
                           onClick={() => setConfirmId(r.id)}
                         >
-                          🗑
+                          <i className="fa-solid fa-trash-can" aria-hidden="true" />
                         </button>
                       )}
                     </td>

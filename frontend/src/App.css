@@ -765,6 +765,10 @@
   text-decoration: underline;
 }
 
+.admin-refresh i {
+  margin-right: 4px;
+}
+
 .admin-empty {
   opacity: 0.7;
 }
@@ -800,22 +804,41 @@
   font-weight: 700;
 }
 
+.heart-ic {
+  color: #ff5f8f;
+}
+
 .row-no td {
   opacity: 0.55;
 }
 
 .admin-delete {
-  background: none;
-  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid rgba(229, 72, 77, 0.45);
+  border-radius: 8px;
+  background: rgba(229, 72, 77, 0.14);
+  color: #ff8fa3;
   cursor: pointer;
-  font-size: 16px;
-  opacity: 0.6;
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  font-size: 14px;
+  line-height: 1;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 
 .admin-delete:hover {
-  opacity: 1;
-  transform: scale(1.15);
+  background: #e5484d;
+  border-color: #e5484d;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.admin-delete:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .admin-confirm {
