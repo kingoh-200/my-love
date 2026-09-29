@@ -81,8 +81,10 @@ function Admin() {
       });
       if (res.ok) {
         setRows((current) => (current || []).filter((r) => r.id !== id));
+        setError("");
       } else {
-        setError("Delete failed — check the delete policy in Supabase.");
+        const body = await res.json().catch(() => ({}));
+        setError(body.detail || `Delete failed (HTTP ${res.status}).`);
       }
     } catch {
       setError("Delete failed — could not reach the server.");
@@ -154,9 +156,13 @@ function Admin() {
       });
       if (res.ok) {
         setInvites((current) => (current || []).filter((i) => i.name !== inviteName));
+        setError("");
+      } else {
+        const body = await res.json().catch(() => ({}));
+        setError(body.detail || `Revoke failed (HTTP ${res.status}).`);
       }
     } catch {
-      /* keep list as-is */
+      setError("Revoke failed — could not reach the server.");
     } finally {
       setRevoking("");
     }
@@ -212,6 +218,12 @@ function Admin() {
           Log out
         </button>
       </header>
+
+      {error && (
+        <p className="admin-banner" role="alert">
+          <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" /> {error}
+        </p>
+      )}
 
       <section className="admin-card">
         <h2>Generate a personal link</h2>

@@ -743,6 +743,23 @@
   margin: 0;
 }
 
+.admin-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 18px;
+  padding: 12px 16px;
+  border: 1px solid rgba(229, 72, 77, 0.45);
+  border-radius: 10px;
+  background: rgba(229, 72, 77, 0.14);
+  color: #ff8fa3;
+  font-size: 14px;
+}
+
+.admin-banner i {
+  flex: none;
+}
+
 .admin-table-head {
   display: flex;
   justify-content: space-between;
