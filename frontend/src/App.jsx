@@ -435,7 +435,9 @@ function AskHerOut() {
   const [stage, setStage] = useState("envelope");
   const [chosen, setChosen] = useState(null);
   const [person] = useState(personFromUrl);
-  const [inviteState, setInviteState] = useState(person ? "checking" : "open");
+  // Invite-only: with no name in the URL there is no letter to open — the
+  // bare domain lands on the not-found page like a hand-edited link would.
+  const [inviteState, setInviteState] = useState(person ? "checking" : "invalid");
   const rowIdRef = useRef(null);
 
   // Personal links only work when the name was issued from the dashboard;
