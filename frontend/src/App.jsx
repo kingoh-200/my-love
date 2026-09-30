@@ -95,7 +95,7 @@ function HeartsRain({ count = 24 }) {
 
 /* ---------------------------------------------------------------
    Bikini-Bottom-style scene animations — one per stage
-   (emoji homage: sponge 🧽, pineapple 🍍, star ⭐, snail 🐌,
+   (emoji homage: sponge 🧽, shell 🐚, star ⭐, snail 🐌,
     boat 🫼, bubbles 🫧, jellyfish 🪼, crab 🦀)
 --------------------------------------------------------------- */
 
@@ -112,8 +112,7 @@ function BubblesScene() {
   }, []);
   return (
     <div className="scene" aria-hidden="true">
-      <span className="sea-critter critter-sponge">🧽</span>
-      <span className="sea-critter critter-pineapple">🍍</span>
+      <span className="sea-critter critter-shell">🐚</span>
       {bubbles.map((b) => (
         <span
           key={b.id}
@@ -175,7 +174,7 @@ function SnailScene() {
 }
 
 function PartyScene() {
-  const dancers = ["🧽", "🍍", "⭐", "🦀"];
+  const dancers = ["🧽", "🐚", "⭐", "🦀"];
   return (
     <div className="scene" aria-hidden="true">
       {dancers.map((d, i) => (
@@ -326,6 +325,11 @@ function prettyTime(time) {
   return `${hr}:${String(m || 0).padStart(2, "0")} ${ampm}`;
 }
 
+function todayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 function WhenFree({ onPick }) {
   const [pickedDay, setPickedDay] = useState(null);
   const [pickedTime, setPickedTime] = useState("");
@@ -353,7 +357,12 @@ function WhenFree({ onPick }) {
           <div className="step-head">
             <span className="step-num">1</span>
             <span className="step-title">Pick a day</span>
-            {pickedDay && <i className="fa-solid fa-circle-check step-done" aria-hidden="true" />}
+            {pickedDay && (
+              <>
+                <span className="step-picked">{prettyDay(pickedDay)}</span>
+                <i className="fa-solid fa-circle-check step-done" aria-hidden="true" />
+              </>
+            )}
           </div>
           <div className="chips day-grid">
             {DAY_OPTIONS.map((day) => (
@@ -373,6 +382,7 @@ function WhenFree({ onPick }) {
               id="date-input"
               type="date"
               className="date-input"
+              min={todayISO()}
               onChange={(e) => {
                 if (e.target.value) pickDay(e.target.value);
               }}
@@ -384,7 +394,12 @@ function WhenFree({ onPick }) {
           <div className="step-head">
             <span className="step-num">2</span>
             <span className="step-title">Pick a time</span>
-            {pickedTime && <i className="fa-solid fa-circle-check step-done" aria-hidden="true" />}
+            {pickedTime && (
+              <>
+                <span className="step-picked">{prettyTime(pickedTime)}</span>
+                <i className="fa-solid fa-circle-check step-done" aria-hidden="true" />
+              </>
+            )}
           </div>
           {!pickedDay && <p className="step-hint">Choose a day first ☝️</p>}
           <div className="chips time-grid">

@@ -319,10 +319,10 @@
   bottom: 8%;
 }
 
-.critter-pineapple {
+.critter-shell {
   left: 12%;
   bottom: 14%;
-  font-size: 54px;
+  font-size: 50px;
   animation-delay: 0.6s;
 }
 
@@ -569,6 +569,17 @@
   margin-left: auto;
   color: #3fb27f;
   font-size: 18px;
+}
+
+.step-picked {
+  margin-left: auto;
+  color: var(--pink-deep);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.step-picked + .step-done {
+  margin-left: 0;
 }
 
 .step-hint {
@@ -1015,21 +1026,34 @@
 
 .admin-invites {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.admin-invite-chip {
-  display: inline-flex;
+.admin-invite-row {
+  display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  flex-wrap: wrap;
   background: #14121a;
   border: 1px solid #2e2a3c;
-  border-radius: 999px;
-  padding: 8px 8px 8px 16px;
+  border-radius: 12px;
+  padding: 8px 10px 8px 14px;
+}
+
+.admin-invite-name {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   color: #ffb3c6;
+  min-width: 70px;
+}
+
+.admin-invite-link {
+  flex: 1;
+  min-width: 200px;
+  font-size: 12.5px;
+  color: #9a94ad;
+  word-break: break-all;
 }
 
 .notfound-card {
@@ -1039,9 +1063,7 @@
   align-items: center;
 }
 
-/* ---------- small screens ---------- */
-
-@media (max-width: 640px) {
+/* ---------- small screens ---------- */@media (max-width: 640px) {
   .title {
     font-size: 30px;
   }
@@ -1051,17 +1073,95 @@
     width: 64px;
   }
 
+  .subtitle {
+    font-size: 17px;
+  }
+
+  .stage {
+    padding: 32px 16px 48px;
+    gap: 14px;
+  }
 
   .question {
     font-size: 26px;
   }
 
   .card {
-    padding: 28px 20px;
+    padding: 24px 16px;
+    border-radius: 22px;
   }
 
   .btn {
     font-size: 18px;
     padding: 12px 28px;
+  }
+
+  .envelope {
+    width: 200px;
+    height: 136px;
+  }
+
+  .envelope .flap::after {
+    width: 30px;
+    height: 30px;
+    bottom: -15px;
+    font-size: 13px;
+  }
+
+  .step-block {
+    padding: 14px 10px;
+    gap: 10px;
+  }
+
+  .step-num {
+    width: 24px;
+    height: 24px;
+    font-size: 13px;
+  }
+
+  .step-title {
+    font-size: 15px;
+  }
+
+  .step-picked {
+    font-size: 12.5px;
+  }
+
+  .chip {
+    padding: 9px 14px;
+    font-size: 15px;
+  }
+
+  .custom-row {
+    font-size: 13px;
+  }
+
+  .date-input {
+    padding: 9px 10px;
+    font-size: 15px;
+  }
+
+  .big-heart {
+    font-size: 56px;
+  }
+
+  .admin-wrap {
+    padding: 20px 12px 48px;
+  }
+
+  .admin-card {
+    padding: 16px 12px;
+  }
+
+  .admin-header h1 {
+    font-size: 21px;
+  }
+
+  .admin-invite-name {
+    min-width: 0;
+  }
+
+  .admin-invite-row .admin-btn {
+    padding: 8px 10px;
   }
 }

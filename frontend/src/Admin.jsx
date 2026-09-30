@@ -13,6 +13,7 @@ function Admin() {
   const [name, setName] = useState("");
   const [generated, setGenerated] = useState("");
   const [copied, setCopied] = useState(false);
+  const [copiedName, setCopiedName] = useState("");
 
   const [rows, setRows] = useState(null);
   const [storage, setStorage] = useState("");
@@ -178,6 +179,18 @@ function Admin() {
     }
   };
 
+  const linkFor = (inviteName) => `${window.location.origin}/i/${encodeURIComponent(inviteName)}`;
+
+  const copyInvite = async (inviteName) => {
+    try {
+      await navigator.clipboard.writeText(linkFor(inviteName));
+      setCopiedName(inviteName);
+      setTimeout(() => setCopiedName(""), 2000);
+    } catch {
+      /* clipboard unavailable — link text is selectable in the row */
+    }
+  };
+
   if (!token) {
     return (
       <div className="admin-wrap">
@@ -269,8 +282,24 @@ function Admin() {
         {Array.isArray(invites) && invites.length > 0 && (
           <div className="admin-invites">
             {invites.map((inv) => (
-              <span key={inv.name} className="admin-invite-chip">
-                {inv.name}
+              <div key={inv.name} className="admin-invite-row">
+                <span className="admin-invite-name">{inv.name}</span>
+                <code className="admin-invite-link">{linkFor(inv.name)}</code>
+                <button
+                  type="button"
+                  className="admin-btn admin-small"
+                  onClick={() => copyInvite(inv.name)}
+                >
+                  {copiedName === inv.name ? (
+                    <>
+                      <i className="fa-solid fa-check" aria-hidden="true" /> Copied
+                    </>
+                  ) : (
+                    <>
+                      <i className="fa-solid fa-copy" aria-hidden="true" /> Copy
+                    </>
+                  )}
+                </button>
                 <button
                   type="button"
                   className="admin-delete"
@@ -280,7 +309,7 @@ function Admin() {
                 >
                   <i className="fa-solid fa-xmark" aria-hidden="true" />
                 </button>
-              </span>
+              </div>
             ))}
           </div>
         )}
