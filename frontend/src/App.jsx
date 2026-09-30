@@ -297,57 +297,78 @@ const DAY_OPTIONS = [
   "I'm flexible 😉",
 ];
 
+const TIME_OPTIONS = [
+  { value: "12:00", label: "12:00 PM" },
+  { value: "13:30", label: "1:30 PM" },
+  { value: "16:00", label: "4:00 PM" },
+  { value: "18:00", label: "6:00 PM" },
+  { value: "19:30", label: "7:30 PM" },
+  { value: "21:00", label: "9:00 PM" },
+];
+
+// "2026-10-03" -> "Sat, Oct 3"; chip labels pass through untouched.
+function prettyDay(day) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(day)) {
+    const d = new Date(`${day}T00:00:00`);
+    if (!Number.isNaN(d.getTime())) {
+      return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+    }
+  }
+  return day;
+}
+
+// "19:30" -> "7:30 PM"
+function prettyTime(time) {
+  const [h, m] = time.split(":").map(Number);
+  if (Number.isNaN(h)) return time;
+  const ampm = h >= 12 ? "PM" : "AM";
+  const hr = h % 12 === 0 ? 12 : h % 12;
+  return `${hr}:${String(m || 0).padStart(2, "0")} ${ampm}`;
+}
+
 function WhenFree({ onPick }) {
   const [pickedDay, setPickedDay] = useState(null);
   const [pickedTime, setPickedTime] = useState("");
-  const [nudge, setNudge] = useState("");
 
   const complete = Boolean(pickedDay && pickedTime);
 
   const pickDay = (value) => {
     setPickedDay(value);
-    setNudge("");
-    if (pickedTime) onPick(value, pickedTime);
   };
 
-  const pickTime = (value) => {
-    setPickedTime(value);
-    setNudge("");
-    if (pickedDay) onPick(pickedDay, value);
-  };
-
-  const tryFinish = () => {
-    if (pickedDay && pickedTime) {
-      onPick(pickedDay, pickedTime);
-    } else if (pickedDay && !pickedTime) {
-      setNudge("Almost! What time works for you? ⏰");
-    } else if (!pickedDay && pickedTime) {
-      setNudge("Almost! Which day should I keep free? 📅");
-    }
-  };
-
-  const label = complete ? `${pickedDay} at ${pickedTime}` : null;
+  const hint = complete
+    ? null
+    : pickedDay
+      ? "Great! Now pick a time ⏰"
+      : pickedTime
+        ? "Almost! Which day should I keep free? 📅"
+        : "Pick a day and a time — then lock it in.";
 
   return (
     <div className="stage">
       <h2 className="title">When are you free? 📅</h2>
-      <p className="subtitle">Pick a day and a time — both, so I can plan this properly 😉</p>
+      <p className="subtitle">Two little steps so I can plan this properly 😉</p>
       <div className="card when-card">
-        <div className="chips day-grid">
-          {DAY_OPTIONS.map((day) => (
-            <button
-              key={day}
-              type="button"
-              className={`chip ${pickedDay === day ? "chip-selected" : ""}`}
-              onClick={() => pickDay(day)}
-            >
-              {day}
-            </button>
-          ))}
-        </div>
-        <div className="date-row">
-          <label htmlFor="date-input">or choose an exact date:</label>
-          <div className="datetime-pair">
+        <div className="step-block">
+          <div className="step-head">
+            <span className="step-num">1</span>
+            <span className="step-title">Pick a day</span>
+            {pickedDay && <i className="fa-solid fa-circle-check step-done" aria-hidden="true" />}
+          </div>
+          <div className="chips day-grid">
+            {DAY_OPTIONS.map((day) => (
+              <button
+                key={day}
+                type="button"
+                className={`chip ${pickedDay === day ? "chip-selected" : ""}`}
+                onClick={() => pickDay(day)}
+              >
+                {day}
+              </button>
+            ))}
+          </div>
+          <div className="custom-row">
+            <label htmlFor="date-input">or an exact date:</label>
             <input
               id="date-input"
               type="date"
@@ -356,19 +377,59 @@ function WhenFree({ onPick }) {
                 if (e.target.value) pickDay(e.target.value);
               }}
             />
+          </div>
+        </div>
+
+        <div className={`step-block ${pickedDay ? "step-active" : "step-locked"}`}>
+          <div className="step-head">
+            <span className="step-num">2</span>
+            <span className="step-title">Pick a time</span>
+            {pickedTime && <i className="fa-solid fa-circle-check step-done" aria-hidden="true" />}
+          </div>
+          {!pickedDay && <p className="step-hint">Choose a day first ☝️</p>}
+          <div className="chips time-grid">
+            {TIME_OPTIONS.map((t) => (
+              <button
+                key={t.value}
+                type="button"
+                className={`chip ${pickedTime === t.value ? "chip-selected" : ""}`}
+                disabled={!pickedDay}
+                onClick={() => setPickedTime(t.value)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <div className="custom-row">
+            <label htmlFor="time-input">or an exact time:</label>
             <input
+              id="time-input"
               aria-label="Pick a time"
               type="time"
               className="date-input time-input"
-              onChange={(e) => pickTime(e.target.value)}
+              disabled={!pickedDay}
+              onChange={(e) => setPickedTime(e.target.value)}
             />
           </div>
-          <button type="button" className="btn yes confirm-btn" onClick={tryFinish} disabled={!pickedDay || !pickedTime}>
+        </div>
+
+        <div className="lock-row">
+          {complete ? (
+            <p className="chosen">
+              📅 {prettyDay(pickedDay)} · ⏰ {prettyTime(pickedTime)} — lock it in?
+            </p>
+          ) : (
+            <p className="time-hint nudge-text">{hint}</p>
+          )}
+          <button
+            type="button"
+            className="btn yes confirm-btn"
+            onClick={() => onPick(pickedDay, pickedTime)}
+            disabled={!complete}
+          >
             Lock it in 🔒
           </button>
-          {nudge && <p className="time-hint nudge-text">{nudge}</p>}
         </div>
-        {label && <p className="chosen">Locked in: {label} ✨</p>}
       </div>
     </div>
   );
