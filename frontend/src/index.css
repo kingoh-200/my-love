@@ -11,7 +11,8 @@
   --border: #ffd6e2;
   --shadow: rgba(255, 93, 143, 0.25);
 
-  --sans: "Segoe UI", system-ui, Roboto, sans-serif;
+  --sans: "Quicksand", "Segoe UI", system-ui, Roboto, sans-serif;
+  --script: "Parisienne", "Segoe Script", cursive;
 
   font-family: var(--sans);
   font-size: 18px;
@@ -26,15 +27,72 @@
 
 * {
   box-sizing: border-box;
-}
-
-body {
+}body {
   margin: 0;
   min-height: 100svh;
   background:
     radial-gradient(1200px 600px at 80% -10%, #ffe3ee 0%, transparent 60%),
     radial-gradient(900px 500px at -10% 110%, #ffe9f2 0%, transparent 55%),
     var(--bg);
+}
+
+/* Ambient glow blobs — pure CSS, behind everything. */
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.55;
+  z-index: 0;
+  pointer-events: none;
+}
+
+body::before {
+  width: 420px;
+  height: 420px;
+  left: -140px;
+  top: -120px;
+  background: radial-gradient(circle, rgba(255, 93, 143, 0.35), transparent 70%);
+  animation: blobDrift 18s ease-in-out infinite;
+}
+
+body::after {
+  width: 480px;
+  height: 480px;
+  right: -160px;
+  bottom: -140px;
+  background: radial-gradient(circle, rgba(199, 125, 255, 0.28), transparent 70%);
+  animation: blobDrift 22s ease-in-out infinite reverse;
+}
+
+@keyframes blobDrift {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(40px, 30px) scale(1.12);
+  }
+}
+
+::selection {
+  background: rgba(255, 93, 143, 0.35);
+}
+
+:focus-visible {
+  outline: 3px solid rgba(255, 93, 143, 0.6);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 #root {

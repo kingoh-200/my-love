@@ -53,7 +53,7 @@ function Envelope({ onOpen, person }) {
           <span className="glow" />
         </button>
       </div>
-      {person && <p className="addressed">for {person} 💕</p>}
+      {person && <p className="addressed script">for {person} 💕</p>}
       <p className="hint">tap to open 💌</p>
     </div>
   );
@@ -243,7 +243,7 @@ function Question({ onYes, person }) {
         <p className="question">Will you go out with me?</p>
 
         <div className="buttons" ref={parentRef}>
-          <button type="button" className="btn yes" style={{ transform: `scale(${yesScale})` }} onClick={onYes}>
+          <button type="button" className="btn yes" style={{ ["--yes-scale"]: yesScale }} onClick={onYes}>
             Yes! 💖
           </button>
 
