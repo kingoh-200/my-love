@@ -65,6 +65,11 @@ ADMIN_PASSCODE = os.environ.get("ADMIN_PASSCODE", "")
 
 INVITES_URL = "invites"
 ANSWERS_URL = "answers"
+IDEAS_URL = "ideas"
+
+# The celebration chips are admin-editable; these seed the store on first
+# use and also serve as a resilient fallback if the ideas table is missing.
+DEFAULT_IDEAS = ["Coffee ☕", "Dinner 🍝", "A movie 🎬", "Stargazing 🌌", "Ice cream 🍦"]
 
 
 def _make_token() -> str:
@@ -550,3 +555,137 @@ def admin_delete_invite(name: str, authorization: str = Header(default="")):
     else:
         _invite_write([e for e in _invite_read() if e.get("name", "").lower() != lowered])
     return {"ok": True, "deleted": lowered}
+
+
+# ---------------------------------------------------------------------------
+# Date ideas: celebration chips, editable from the dashboard. Seeded with
+# DEFAULT_IDEAS on first use; the public endpoint never fails hard — if the
+# ideas table is missing it falls back to the defaults so the celebration
+# page always shows chips.
+# ---------------------------------------------------------------------------
+def _ideas_read() -> list:
+    try:
+        with open(
+            os.path.join(os.path.dirname(FALLBACK_FILE), "ideas.json"), encoding="utf-8"
+        ) as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return []
+
+
+def _ideas_write(entries: list) -> None:
+    path = os.path.join(os.path.dirname(FALLBACK_FILE), "ideas.json")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(entries, f, indent=2, ensure_ascii=False)
+
+
+def _seed_ideas_locally() -> list:
+    entries = [{"id": i + 1, "label": label} for i, label in enumerate(DEFAULT_IDEAS)]
+    _ideas_write(entries)
+    return entries
+
+
+def _ideas_local_list() -> list:
+    entries = _ideas_read()
+    if not entries:
+        entries = _seed_ideas_locally()
+    return entries
+
+
+def _ideas_supabase_list_or_none() -> Optional[list]:
+    """Select the ideas rows, or None when Supabase is unreachable/misconfigured
+    (e.g. the table hasn't been created yet)."""
+    try:
+        return _rest_select(IDEAS_URL, "select=*&order=created_at.asc")
+    except HTTPException:
+        return None
+
+
+def _ideas_guard(call):
+    """Run a Supabase ideas write; translate a missing-table error into an
+    actionable message instead of raw PostgREST jargon."""
+    try:
+        return call()
+    except HTTPException as e:
+        if "Could not find the table" in str(e.detail):
+            raise HTTPException(
+                status_code=502,
+                detail="The ideas table doesn't exist in Supabase yet — run the 'ideas' block from supabase.sql in the SQL Editor, then try again",
+            )
+        raise
+
+
+def _supabase_ideas_seeded_list() -> list:
+    rows = _ideas_supabase_list_or_none()
+    if rows is None:
+        return DEFAULT_IDEAS
+    if not rows:
+        seeded = []
+        for label in DEFAULT_IDEAS:
+            try:
+                seeded.append(_ideas_guard(lambda l=label: _rest_insert(IDEAS_URL, {"label": l})))
+            except HTTPException:
+                return DEFAULT_IDEAS
+        return seeded
+    return rows
+
+
+@app.get("/api/ideas")
+def list_ideas():
+    """Public: the celebration chip labels. Never 5xx — falls back to defaults."""
+    if _using_supabase():
+        return {"ideas": _supabase_ideas_seeded_list()}
+    return {"ideas": [e["label"] for e in _ideas_local_list()]}
+
+
+@app.get("/api/admin/ideas")
+def admin_list_ideas(authorization: str = Header(default="")):
+    token = authorization.removeprefix("Bearer ").strip()
+    if not _verify_token(token):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    if _using_supabase():
+        return {"ideas": _supabase_ideas_seeded_list()}
+    return {"ideas": _ideas_local_list()}
+
+
+@app.post("/api/admin/ideas")
+def admin_create_idea(body: dict, authorization: str = Header(default="")):
+    token = authorization.removeprefix("Bearer ").strip()
+    if not _verify_token(token):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    label = str(body.get("label", "")).strip()
+    if not label or len(label) > 60:
+        raise HTTPException(status_code=400, detail="Idea must be 1-60 characters")
+    if _using_supabase():
+        existing = _ideas_supabase_list_or_none()
+        if existing is not None and any(
+            str(r.get("label", "")).strip().lower() == label.lower() for r in existing
+        ):
+            raise HTTPException(status_code=400, detail="That idea is already on the list")
+        try:
+            row = _ideas_guard(lambda: _rest_insert(IDEAS_URL, {"label": label}))
+        except HTTPException as e:
+            if "already exists" in str(e.detail) or "duplicate key" in str(e.detail):
+                raise HTTPException(status_code=400, detail="That idea is already on the list")
+            raise
+    else:
+        entries = _ideas_local_list()
+        if any(str(e.get("label", "")).strip().lower() == label.lower() for e in entries):
+            raise HTTPException(status_code=400, detail="That idea is already on the list")
+        row = {"id": max((e.get("id", 0) for e in entries), default=0) + 1, "label": label}
+        entries.append(row)
+        _ideas_write(entries)
+    return {"ok": True, "idea": row}
+
+
+@app.delete("/api/admin/ideas/{idea_id}")
+def admin_delete_idea(idea_id: int, authorization: str = Header(default="")):
+    token = authorization.removeprefix("Bearer ").strip()
+    if not _verify_token(token):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    if _using_supabase():
+        _ideas_guard(lambda: _rest_delete(IDEAS_URL, f"id=eq.{int(idea_id)}"))
+    else:
+        _ideas_write([e for e in _ideas_local_list() if e.get("id") != idea_id])
+    return {"ok": True, "deleted": idea_id}

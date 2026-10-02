@@ -77,3 +77,36 @@ create policy "allow anonymous invite deletes"
   on invites for delete
   to anon
   using (true);
+
+-- ============================================================
+--  Date ideas: the celebration chips she picks from after a Yes.
+--  The five defaults below are seeded automatically on first use;
+--  add/remove them any time from the admin dashboard.
+-- ============================================================
+
+create table if not exists ideas (
+  id bigint generated always as identity primary key,
+  label text not null unique,
+  created_at timestamptz not null default now()
+);
+
+alter table ideas enable row level security;
+
+-- Public only needs to READ the chip labels (served through the API).
+drop policy if exists "allow anonymous idea reads" on ideas;
+create policy "allow anonymous idea reads"
+  on ideas for select
+  to anon
+  using (true);
+
+drop policy if exists "allow anonymous idea inserts" on ideas;
+create policy "allow anonymous idea inserts"
+  on ideas for insert
+  to anon
+  with check (true);
+
+drop policy if exists "allow anonymous idea deletes" on ideas;
+create policy "allow anonymous idea deletes"
+  on ideas for delete
+  to anon
+  using (true);

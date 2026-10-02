@@ -514,6 +514,10 @@ function AskHerOut() {
   // Invite-only: with no name in the URL there is no letter to open — the
   // bare domain lands on the not-found page like a hand-edited link would.
   const [inviteState, setInviteState] = useState(person ? "checking" : "invalid");
+  // Date-idea chips are admin-editable; start from the defaults and swap in
+  // the live list once fetched (the /api/ideas endpoint never fails hard).
+  const [ideas, setIdeas] = useState(DATE_IDEAS);
+  const ideasFetchedRef = useRef(false);
   const rowIdRef = useRef(null);
 
   // Personal links only work when the name was issued from the dashboard;
@@ -532,6 +536,27 @@ function AskHerOut() {
       cancelled = true;
     };
   }, [person]);
+
+  // Fetch the admin-curated date ideas once, just before the celebration
+  // stage needs them (the "when" stage always precedes it). Failure keeps
+  // the built-in defaults.
+  useEffect(() => {
+    if (stage !== "when" || ideasFetchedRef.current) return;
+    ideasFetchedRef.current = true;
+    let cancelled = false;
+    fetch("/api/ideas")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        const labels = (data?.ideas || []).filter(Boolean);
+        if (!cancelled && labels.length) setIdeas(labels);
+      })
+      .catch(() => {
+        /* defaults stay */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [stage]);
 
   const postAnswer = async (payload) => {
     try {
@@ -657,7 +682,7 @@ function AskHerOut() {
           <p className="big-heart">💖</p>
           <p>So… what are we doing?</p>
           <div className="chips">
-            {DATE_IDEAS.map((idea) => (
+            {ideas.map((idea) => (
               <button
                 key={idea}
                 type="button"

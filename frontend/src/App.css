@@ -1056,6 +1056,33 @@
   word-break: break-all;
 }
 
+.admin-ideas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.admin-idea-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #14121a;
+  border: 1px solid #2e2a3c;
+  border-radius: 999px;
+  padding: 6px 8px 6px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #e8e6ef;
+}
+
+.admin-delete-sm {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 11px;
+}
+
 .notfound-card {
   display: flex;
   flex-direction: column;

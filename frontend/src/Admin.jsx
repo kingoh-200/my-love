@@ -23,6 +23,11 @@ function Admin() {
   const [revoking, setRevoking] = useState("");
   const [refreshing, setRefreshing] = useState(false);
 
+  const [ideas, setIdeas] = useState(null);
+  const [ideaInput, setIdeaInput] = useState("");
+  const [addingIdea, setAddingIdea] = useState(false);
+  const [removingIdeaId, setRemovingIdeaId] = useState(null);
+
   const loadResponses = useCallback(async (authToken) => {
     setRefreshing(true);
     try {
@@ -65,13 +70,28 @@ function Admin() {
     }
   }, []);
 
+  const loadIdeas = useCallback(async (authToken) => {
+    try {
+      const res = await fetch("/api/admin/ideas", {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setIdeas(data.ideas || []);
+      }
+    } catch {
+      /* ideas list is non-critical */
+    }
+  }, []);
+
   // Load responses whenever the auth token changes (login or restored session).
   useEffect(() => {
     if (token) {
       loadResponses(token);
       loadInvites(token);
+      loadIdeas(token);
     }
-  }, [token, loadResponses, loadInvites]);
+  }, [token, loadResponses, loadInvites, loadIdeas]);
 
   const deleteRow = async (id) => {
     setDeletingId(id);
@@ -166,6 +186,56 @@ function Admin() {
       setError("Revoke failed — could not reach the server.");
     } finally {
       setRevoking("");
+    }
+  };
+
+  const addIdea = async (e) => {
+    e.preventDefault();
+    const clean = ideaInput.trim();
+    if (!clean) return;
+    setAddingIdea(true);
+    try {
+      const res = await fetch("/api/admin/ideas", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ label: clean }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.detail || "Could not add the idea");
+        return;
+      }
+      setIdeas((current) => [...(current || []), data.idea]);
+      setIdeaInput("");
+      setError("");
+    } catch {
+      setError("Could not reach the server.");
+    } finally {
+      setAddingIdea(false);
+    }
+  };
+
+  const removeIdea = async (ideaId) => {
+    setRemovingIdeaId(ideaId);
+    try {
+      const res = await fetch(`/api/admin/ideas/${ideaId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setIdeas((current) => (current || []).filter((i) => i.id !== ideaId));
+        setError("");
+      } else {
+        const body = await res.json().catch(() => ({}));
+        setError(body.detail || `Remove failed (HTTP ${res.status}).`);
+      }
+    } catch {
+      setError("Remove failed — could not reach the server.");
+    } finally {
+      setRemovingIdeaId(null);
     }
   };
 
@@ -310,6 +380,49 @@ function Admin() {
                   <i className="fa-solid fa-xmark" aria-hidden="true" />
                 </button>
               </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="admin-card">
+        <div className="admin-table-head">
+          <h2>Date ideas</h2>
+          <span className="admin-meta">the choices she picks from after a yes</span>
+        </div>
+        <form className="admin-gen" onSubmit={addIdea}>
+          <input
+            value={ideaInput}
+            onChange={(e) => setIdeaInput(e.target.value)}
+            placeholder="Add an idea, e.g. Bowling 🎳"
+            maxLength={60}
+          />
+          <button type="submit" className="admin-btn" disabled={!ideaInput.trim() || addingIdea}>
+            {addingIdea ? "Adding…" : "Add idea"}
+          </button>
+        </form>
+        {ideas === null && <p>Loading…</p>}
+        {Array.isArray(ideas) && ideas.length === 0 && (
+          <p className="admin-empty">
+            <i className="fa-solid fa-envelope" aria-hidden="true" /> No ideas yet — add a few
+            above (defaults appear automatically once saved).
+          </p>
+        )}
+        {Array.isArray(ideas) && ideas.length > 0 && (
+          <div className="admin-ideas">
+            {ideas.map((idea) => (
+              <span key={idea.id} className="admin-idea-chip">
+                <span className="admin-idea-label">{idea.label}</span>
+                <button
+                  type="button"
+                  className="admin-delete admin-delete-sm"
+                  title="Remove this idea (she will no longer see it)"
+                  disabled={removingIdeaId === idea.id}
+                  onClick={() => removeIdea(idea.id)}
+                >
+                  <i className="fa-solid fa-xmark" aria-hidden="true" />
+                </button>
+              </span>
             ))}
           </div>
         )}
