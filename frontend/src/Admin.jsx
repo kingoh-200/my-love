@@ -24,6 +24,7 @@ function Admin() {
   const [refreshing, setRefreshing] = useState(false);
 
   const [ideas, setIdeas] = useState(null);
+  const [selectedIdeaLabels, setSelectedIdeaLabels] = useState([]);
   const [ideaInput, setIdeaInput] = useState("");
   const [addingIdea, setAddingIdea] = useState(false);
   const [removingIdeaId, setRemovingIdeaId] = useState(null);
@@ -78,6 +79,7 @@ function Admin() {
       if (res.ok) {
         const data = await res.json();
         setIdeas(data.ideas || []);
+        setSelectedIdeaLabels((data.ideas || []).map((idea) => idea.label));
       }
     } catch {
       /* ideas list is non-critical */
@@ -151,7 +153,7 @@ function Admin() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ name: clean }),
+        body: JSON.stringify({ name: clean, idea_labels: selectedIdeaLabels }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -209,6 +211,7 @@ function Admin() {
         return;
       }
       setIdeas((current) => [...(current || []), data.idea]);
+      setSelectedIdeaLabels((current) => [...current, data.idea.label]);
       setIdeaInput("");
       setError("");
     } catch {
@@ -226,7 +229,9 @@ function Admin() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
+        const removedLabel = (ideas || []).find((idea) => idea.id === ideaId)?.label;
         setIdeas((current) => (current || []).filter((i) => i.id !== ideaId));
+        setSelectedIdeaLabels((current) => current.filter((label) => label !== removedLabel));
         setError("");
       } else {
         const body = await res.json().catch(() => ({}));
@@ -320,6 +325,26 @@ function Admin() {
             {busy ? "Creating…" : "Create link"}
           </button>
         </form>
+        <fieldset className="admin-link-ideas" disabled={!Array.isArray(ideas)}>
+          <legend>Date ideas for this link</legend>
+          {Array.isArray(ideas) && ideas.length === 0 && (
+            <span className="admin-meta">No date ideas are available to select.</span>
+          )}
+          {(ideas || []).map((idea) => (
+            <label key={idea.id} className="admin-link-idea-option">
+              <input
+                type="checkbox"
+                checked={selectedIdeaLabels.includes(idea.label)}
+                onChange={(event) => setSelectedIdeaLabels((current) => (
+                  event.target.checked
+                    ? [...current, idea.label]
+                    : current.filter((label) => label !== idea.label)
+                ))}
+              />
+              {idea.label}
+            </label>
+          ))}
+        </fieldset>
         {generated && (
           <div className="admin-link-row">
             <code>{generated}</code>
@@ -354,6 +379,11 @@ function Admin() {
             {invites.map((inv) => (
               <div key={inv.name} className="admin-invite-row">
                 <span className="admin-invite-name">{inv.name}</span>
+                {Array.isArray(inv.idea_labels) && (
+                  <span className="admin-invite-ideas">
+                    {inv.idea_labels.length ? inv.idea_labels.join(", ") : "No date ideas"}
+                  </span>
+                )}
                 <code className="admin-invite-link">{linkFor(inv.name)}</code>
                 <button
                   type="button"
@@ -405,7 +435,7 @@ function Admin() {
         {Array.isArray(ideas) && ideas.length === 0 && (
           <p className="admin-empty">
             <i className="fa-solid fa-envelope" aria-hidden="true" /> No ideas yet — add a few
-            above (defaults appear automatically once saved).
+            above to make them available when creating a link.
           </p>
         )}
         {Array.isArray(ideas) && ideas.length > 0 && (

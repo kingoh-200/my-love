@@ -544,7 +544,7 @@ function AskHerOut() {
     if (stage !== "when" || ideasFetchedRef.current) return;
     ideasFetchedRef.current = true;
     let cancelled = false;
-    fetch("/api/ideas")
+    fetch(`/api/invite/${encodeURIComponent(person)}/ideas`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         const labels = (data?.ideas || []).filter(Boolean);

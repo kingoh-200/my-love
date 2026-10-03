@@ -54,8 +54,11 @@ create policy "allow anonymous deletes"
 create table if not exists invites (
   id bigint generated always as identity primary key,
   name text not null unique,
+  idea_labels jsonb,
   created_at timestamptz not null default now()
 );
+
+alter table invites add column if not exists idea_labels jsonb;
 
 alter table invites enable row level security;
 

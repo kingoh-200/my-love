@@ -511,6 +511,30 @@ def check_invite(name: str):
     return {"ok": True}
 
 
+@app.get("/api/invite/{name}/ideas")
+def invite_ideas(name: str):
+    """Public: date ideas selected for this invite, or the global list for legacy invites."""
+    lowered = (name or "").strip().lower()
+    if _using_supabase():
+        query = f"select=name,idea_labels&name=eq.{urllib.parse.quote(lowered)}"
+        rows = _rest_select(INVITES_URL, query)
+        if not rows:
+            raise HTTPException(status_code=404, detail="Invite not found")
+        selected = rows[0].get("idea_labels")
+    else:
+        invite = next(
+            (entry for entry in _invite_read() if entry.get("name", "").lower() == lowered),
+            None,
+        )
+        if invite is None:
+            raise HTTPException(status_code=404, detail="Invite not found")
+        selected = invite.get("idea_labels")
+    if selected is None:
+        entries = _supabase_ideas_seeded_list() if _using_supabase() else _ideas_local_list()
+        return {"ideas": [entry["label"] for entry in entries]}
+    return {"ideas": selected}
+
+
 @app.get("/api/admin/invites")
 def admin_list_invites(authorization: str = Header(default="")):
     token = authorization.removeprefix("Bearer ").strip()
@@ -531,14 +555,28 @@ def admin_create_invite(body: dict, authorization: str = Header(default="")):
     name = str(body.get("name", "")).strip()
     if not name or len(name) > 60:
         raise HTTPException(status_code=400, detail="Name must be 1-60 characters")
+    requested_ideas = body.get("idea_labels")
+    idea_labels = None
+    if requested_ideas is not None:
+        if not isinstance(requested_ideas, list) or any(
+            not isinstance(label, str) for label in requested_ideas
+        ):
+            raise HTTPException(status_code=400, detail="Date ideas must be a list of labels")
+        available = (
+            _supabase_ideas_seeded_list() if _using_supabase() else _ideas_local_list()
+        )
+        available_labels = {str(entry.get("label", "")) for entry in available}
+        if any(label not in available_labels for label in requested_ideas):
+            raise HTTPException(status_code=400, detail="Choose date ideas from the current list")
+        idea_labels = requested_ideas
     if _using_supabase():
-        row = _rest_insert(INVITES_URL, {"name": name.lower()})
+        row = _rest_insert(INVITES_URL, {"name": name.lower(), "idea_labels": idea_labels})
     else:
         entries = _invite_read()
         if any(e.get("name", "").lower() == name.lower() for e in entries):
             row = {"name": name.lower()}
         else:
-            row = {"id": len(entries) + 1, "name": name.lower()}
+            row = {"id": len(entries) + 1, "name": name.lower(), "idea_labels": idea_labels}
             entries.append(row)
             _invite_write(entries)
     return {"ok": True, "invite": row}
