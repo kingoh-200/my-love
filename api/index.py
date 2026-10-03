@@ -569,6 +569,8 @@ def _ideas_read() -> list:
             os.path.join(os.path.dirname(FALLBACK_FILE), "ideas.json"), encoding="utf-8"
         ) as f:
             return json.load(f)
+    except FileNotFoundError:
+        return _seed_ideas_locally()
     except (OSError, json.JSONDecodeError):
         return []
 
@@ -588,8 +590,6 @@ def _seed_ideas_locally() -> list:
 
 def _ideas_local_list() -> list:
     entries = _ideas_read()
-    if not entries:
-        entries = _seed_ideas_locally()
     return entries
 
 
@@ -620,14 +620,6 @@ def _supabase_ideas_seeded_list() -> list:
     rows = _ideas_supabase_list_or_none()
     if rows is None:
         return DEFAULT_IDEAS
-    if not rows:
-        seeded = []
-        for label in DEFAULT_IDEAS:
-            try:
-                seeded.append(_ideas_guard(lambda l=label: _rest_insert(IDEAS_URL, {"label": l})))
-            except HTTPException:
-                return DEFAULT_IDEAS
-        return seeded
     return rows
 
 

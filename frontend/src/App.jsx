@@ -548,7 +548,7 @@ function AskHerOut() {
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         const labels = (data?.ideas || []).filter(Boolean);
-        if (!cancelled && labels.length) setIdeas(labels);
+        if (!cancelled) setIdeas(labels);
       })
       .catch(() => {
         /* defaults stay */
