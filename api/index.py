@@ -567,7 +567,10 @@ def invite_ideas(name: str):
         selected = invite.get("idea_labels")
     if selected is None:
         entries = _supabase_ideas_seeded_list() if _using_supabase() else _ideas_local_list()
-        return {"ideas": [entry["label"] for entry in entries]}
+        labels = [entry["label"] for entry in entries]
+        return {"ideas": labels or DEFAULT_IDEAS}
+    if not selected:
+        return {"ideas": DEFAULT_IDEAS}
     return {"ideas": selected}
 
 
@@ -604,7 +607,8 @@ def admin_create_invite(body: dict, authorization: str = Header(default="")):
         available_labels = {str(entry.get("label", "")) for entry in available}
         if any(label not in available_labels for label in requested_ideas):
             raise HTTPException(status_code=400, detail="Choose date ideas from the current list")
-        idea_labels = requested_ideas
+        # An empty selection means use the built-in choices for this invite.
+        idea_labels = requested_ideas or DEFAULT_IDEAS
     if _using_supabase():
         row = _rest_insert(INVITES_URL, {"name": name.lower(), "idea_labels": idea_labels})
     else:
