@@ -287,7 +287,40 @@ def home():
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "storage": _storage_name()}
+    if not _using_supabase():
+        return {
+            "ok": True,
+            "storage": "local-file",
+            "database_connected": False,
+            "schema_ready": False,
+        }
+    try:
+        # Check the table and column required by personalized date selections.
+        _rest_select(INVITES_URL, "select=id,idea_labels&limit=0")
+    except HTTPException as e:
+        detail = str(e.detail)
+        reachable = "Supabase unreachable" not in detail
+        if "PGRST204" in detail or "idea_labels" in detail:
+            message = "Supabase is reachable, but public.invites.idea_labels is missing from the REST schema cache. Apply the invites migration in the Supabase project configured on Vercel."
+        elif "Could not find the table" in detail or "PGRST205" in detail:
+            message = "Supabase is reachable, but the invites table is missing from the REST schema cache. Apply the invites section of supabase.sql in the project configured on Vercel."
+        elif not reachable:
+            message = "Could not reach Supabase. Check the Vercel SUPABASE_URL and network status."
+        else:
+            message = "Supabase returned an API error during the schema check. Verify the Vercel Supabase project URL, key, and anon table permissions."
+        return {
+            "ok": False,
+            "storage": "supabase",
+            "database_connected": reachable,
+            "schema_ready": False,
+            "detail": message,
+        }
+    return {
+        "ok": True,
+        "storage": "supabase",
+        "database_connected": True,
+        "schema_ready": True,
+    }
 
 
 @app.get("/api/debug")
@@ -447,6 +480,11 @@ def _rest_insert(table: str, entry: dict) -> dict:
         return rows[0] if rows else entry
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8", "replace")
+        if table == INVITES_URL and "idea_labels" in entry and "PGRST204" in body:
+            raise HTTPException(
+                status_code=503,
+                detail="Supabase received the request, but public.invites.idea_labels is missing from its REST schema cache. Run ALTER TABLE public.invites ADD COLUMN IF NOT EXISTS idea_labels jsonb; then NOTIFY pgrst, 'reload schema'; in the Supabase project configured on Vercel.",
+            )
         raise HTTPException(status_code=502, detail=f"Supabase insert failed ({e.code}): {body}")
     except urllib.error.URLError as e:
         raise HTTPException(status_code=502, detail=f"Supabase unreachable: {e.reason}")
