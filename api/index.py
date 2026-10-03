@@ -19,7 +19,9 @@ app = FastAPI()
 # ---------------------------------------------------------------------------
 RAW_SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
-SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+SUPABASE_ADMIN_KEY = os.environ.get("SUPABASE_SECRET_KEY", "") or os.environ.get(
+    "SUPABASE_SERVICE_ROLE_KEY", ""
+)
 
 
 def _resolve_supabase_url(raw: str) -> str:
@@ -516,10 +518,10 @@ def _rest_patch(table: str, query: str, entry: dict) -> list:
     import urllib.error
     import urllib.request
 
-    if not SUPABASE_SERVICE_ROLE_KEY:
+    if not SUPABASE_ADMIN_KEY:
         raise HTTPException(
             status_code=503,
-            detail="Editing existing links requires SUPABASE_SERVICE_ROLE_KEY to be set in the server environment.",
+            detail="Editing existing links requires SUPABASE_SECRET_KEY (or legacy SUPABASE_SERVICE_ROLE_KEY) in the server environment.",
         )
     url = f"{SUPABASE_URL}/rest/v1/{table}?{query}"
     data = json.dumps(entry).encode("utf-8")
@@ -528,12 +530,13 @@ def _rest_patch(table: str, query: str, entry: dict) -> list:
         data=data,
         method="PATCH",
         headers={
-            "apikey": SUPABASE_SERVICE_ROLE_KEY,
-            "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+            "apikey": SUPABASE_ADMIN_KEY,
             "Content-Type": "application/json",
             "Prefer": "return=representation",
         },
     )
+    if not SUPABASE_ADMIN_KEY.startswith("sb_secret_"):
+        req.add_header("Authorization", f"Bearer {SUPABASE_ADMIN_KEY}")
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:
             return json.loads(resp.read().decode("utf-8"))
