@@ -1079,6 +1079,12 @@
   font-size: 13px;
 }
 
+.admin-setup-note {
+  margin: 10px 0 0;
+  color: #ffb3c6;
+  font-size: 13px;
+}
+
 .admin-link-idea-option {
   display: inline-flex;
   align-items: center;

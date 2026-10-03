@@ -24,6 +24,7 @@ function Admin() {
   const [refreshing, setRefreshing] = useState(false);
 
   const [ideas, setIdeas] = useState(null);
+  const [ideasConfigured, setIdeasConfigured] = useState(true);
   const [selectedIdeaLabels, setSelectedIdeaLabels] = useState([]);
   const [ideaInput, setIdeaInput] = useState("");
   const [addingIdea, setAddingIdea] = useState(false);
@@ -80,6 +81,7 @@ function Admin() {
         const data = await res.json();
         setIdeas(data.ideas || []);
         setSelectedIdeaLabels((data.ideas || []).map((idea) => idea.label));
+        setIdeasConfigured(data.configured !== false);
       }
     } catch {
       /* ideas list is non-critical */
@@ -427,10 +429,16 @@ function Admin() {
             placeholder="Add an idea, e.g. Bowling 🎳"
             maxLength={60}
           />
-          <button type="submit" className="admin-btn" disabled={!ideaInput.trim() || addingIdea}>
+          <button type="submit" className="admin-btn" disabled={!ideaInput.trim() || addingIdea || !ideasConfigured}>
             {addingIdea ? "Adding…" : "Add idea"}
           </button>
         </form>
+        {!ideasConfigured && (
+          <p className="admin-setup-note" role="status">
+            Supabase setup needed: run the invites and date ideas sections from supabase.sql in
+            your Supabase SQL Editor to save changes.
+          </p>
+        )}
         {ideas === null && <p>Loading…</p>}
         {Array.isArray(ideas) && ideas.length === 0 && (
           <p className="admin-empty">
@@ -441,13 +449,13 @@ function Admin() {
         {Array.isArray(ideas) && ideas.length > 0 && (
           <div className="admin-ideas">
             {ideas.map((idea) => (
-              <span key={idea.id} className="admin-idea-chip">
+              <span key={idea.id ?? idea.label} className="admin-idea-chip">
                 <span className="admin-idea-label">{idea.label}</span>
                 <button
                   type="button"
                   className="admin-delete admin-delete-sm"
                   title="Remove this idea (she will no longer see it)"
-                  disabled={removingIdeaId === idea.id}
+                  disabled={!ideasConfigured || removingIdeaId === idea.id}
                   onClick={() => removeIdea(idea.id)}
                 >
                   <i className="fa-solid fa-xmark" aria-hidden="true" />

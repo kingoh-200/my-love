@@ -657,7 +657,10 @@ def _ideas_guard(call):
 def _supabase_ideas_seeded_list() -> list:
     rows = _ideas_supabase_list_or_none()
     if rows is None:
-        return DEFAULT_IDEAS
+        return [
+            {"id": None, "label": label}
+            for label in DEFAULT_IDEAS
+        ]
     return rows
 
 
@@ -665,7 +668,7 @@ def _supabase_ideas_seeded_list() -> list:
 def list_ideas():
     """Public: the celebration chip labels. Never 5xx — falls back to defaults."""
     if _using_supabase():
-        return {"ideas": _supabase_ideas_seeded_list()}
+        return {"ideas": [entry["label"] for entry in _supabase_ideas_seeded_list()]}
     return {"ideas": [e["label"] for e in _ideas_local_list()]}
 
 
@@ -675,8 +678,12 @@ def admin_list_ideas(authorization: str = Header(default="")):
     if not _verify_token(token):
         raise HTTPException(status_code=401, detail="Unauthorized")
     if _using_supabase():
-        return {"ideas": _supabase_ideas_seeded_list()}
-    return {"ideas": _ideas_local_list()}
+        rows = _ideas_supabase_list_or_none()
+        if rows is None:
+            fallback = [{"id": None, "label": label} for label in DEFAULT_IDEAS]
+            return {"ideas": fallback, "configured": False}
+        return {"ideas": rows, "configured": True}
+    return {"ideas": _ideas_local_list(), "configured": True}
 
 
 @app.post("/api/admin/ideas")
