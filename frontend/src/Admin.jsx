@@ -3,6 +3,7 @@ import "@fortawesome/fontawesome-free/css/fontawesome.min.css";
 import "@fortawesome/fontawesome-free/css/solid.min.css";
 
 const TOKEN_KEY = "admin_token";
+const DEFAULT_IDEA_LABELS = ["Coffee ☕", "Dinner 🍝", "A movie 🎬", "Stargazing 🌌", "Ice cream 🍦"];
 
 function formatRecordedAt(value) {
   if (!value) return "—";
@@ -36,6 +37,9 @@ function Admin() {
   const [confirmId, setConfirmId] = useState(null);
   const [invites, setInvites] = useState(null);
   const [revoking, setRevoking] = useState("");
+  const [editingInviteName, setEditingInviteName] = useState("");
+  const [editingInviteLabels, setEditingInviteLabels] = useState([]);
+  const [savingInviteIdeas, setSavingInviteIdeas] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const [ideas, setIdeas] = useState(null);
@@ -205,6 +209,40 @@ function Admin() {
       setError("Revoke failed — could not reach the server.");
     } finally {
       setRevoking("");
+    }
+  };
+
+  const editInviteIdeas = (invite) => {
+    const savedLabels = Array.isArray(invite.idea_labels) ? invite.idea_labels : [];
+    setEditingInviteName(invite.name);
+    setEditingInviteLabels(savedLabels.length ? savedLabels : DEFAULT_IDEA_LABELS);
+  };
+
+  const saveInviteIdeas = async (inviteName) => {
+    setSavingInviteIdeas(true);
+    try {
+      const res = await fetch(`/api/admin/invites/${encodeURIComponent(inviteName)}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ idea_labels: editingInviteLabels }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.detail || "Could not update this link's date ideas");
+        return;
+      }
+      setInvites((current) => (current || []).map((invite) => (
+        invite.name === inviteName ? data.invite : invite
+      )));
+      setEditingInviteName("");
+      setError("");
+    } catch {
+      setError("Could not reach the server.");
+    } finally {
+      setSavingInviteIdeas(false);
     }
   };
 
@@ -394,38 +432,79 @@ function Admin() {
         {Array.isArray(invites) && invites.length > 0 && (
           <div className="admin-invites">
             {invites.map((inv) => (
-              <div key={inv.name} className="admin-invite-row">
-                <span className="admin-invite-name">{inv.name}</span>
-                {Array.isArray(inv.idea_labels) && (
-                  <span className="admin-invite-ideas">
-                    {inv.idea_labels.length ? inv.idea_labels.join(", ") : "No date ideas"}
-                  </span>
-                )}
-                <code className="admin-invite-link">{linkFor(inv.name)}</code>
-                <button
-                  type="button"
-                  className="admin-btn admin-small"
-                  onClick={() => copyInvite(inv.name)}
-                >
-                  {copiedName === inv.name ? (
-                    <>
-                      <i className="fa-solid fa-check" aria-hidden="true" /> Copied
-                    </>
-                  ) : (
-                    <>
-                      <i className="fa-solid fa-copy" aria-hidden="true" /> Copy
-                    </>
+              <div key={inv.name} className="admin-invite-entry">
+                <div className="admin-invite-row">
+                  <span className="admin-invite-name">{inv.name}</span>
+                  {Array.isArray(inv.idea_labels) && (
+                    <span className="admin-invite-ideas">
+                      {inv.idea_labels.length ? inv.idea_labels.join(", ") : "Defaults"}
+                    </span>
                   )}
-                </button>
-                <button
-                  type="button"
-                  className="admin-delete"
-                  title="Revoke this invite (link stops working)"
-                  disabled={revoking === inv.name}
-                  onClick={() => revokeInvite(inv.name)}
-                >
-                  <i className="fa-solid fa-xmark" aria-hidden="true" />
-                </button>
+                  <code className="admin-invite-link">{linkFor(inv.name)}</code>
+                  <button
+                    type="button"
+                    className="admin-btn admin-small"
+                    onClick={() => copyInvite(inv.name)}
+                  >
+                    {copiedName === inv.name ? (
+                      <>
+                        <i className="fa-solid fa-check" aria-hidden="true" /> Copied
+                      </>
+                    ) : (
+                      <>
+                        <i className="fa-solid fa-copy" aria-hidden="true" /> Copy
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-btn admin-small admin-edit-ideas"
+                    onClick={() => editingInviteName === inv.name
+                      ? setEditingInviteName("")
+                      : editInviteIdeas(inv)}
+                  >
+                    {editingInviteName === inv.name ? "Cancel edit" : "Edit ideas"}
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-delete"
+                    title="Revoke this invite (link stops working)"
+                    disabled={revoking === inv.name}
+                    onClick={() => revokeInvite(inv.name)}
+                  >
+                    <i className="fa-solid fa-xmark" aria-hidden="true" />
+                  </button>
+                </div>
+                {editingInviteName === inv.name && (
+                  <div className="admin-invite-idea-editor">
+                    {[...new Set([
+                      ...(ideas || []).map((idea) => idea.label),
+                      ...DEFAULT_IDEA_LABELS,
+                      ...editingInviteLabels,
+                    ])].map((label) => (
+                      <label key={label} className="admin-link-idea-option">
+                        <input
+                          type="checkbox"
+                          checked={editingInviteLabels.includes(label)}
+                          onChange={(event) => setEditingInviteLabels((current) => (
+                            event.target.checked
+                              ? [...current, label]
+                              : current.filter((item) => item !== label)
+                          ))}
+                        />
+                        {label}
+                      </label>
+                    ))}
+                    <button
+                      type="button"
+                      className="admin-btn admin-small"
+                      disabled={savingInviteIdeas}
+                      onClick={() => saveInviteIdeas(inv.name)}
+                    >
+                      {savingInviteIdeas ? "Saving…" : "Save ideas"}
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

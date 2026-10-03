@@ -19,6 +19,7 @@ app = FastAPI()
 # ---------------------------------------------------------------------------
 RAW_SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
+SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
 
 
 def _resolve_supabase_url(raw: str) -> str:
@@ -511,6 +512,38 @@ def _rest_select(table: str, query: str = "select=*") -> list:
         raise HTTPException(status_code=502, detail=f"Supabase unreachable: {e.reason}")
 
 
+def _rest_patch(table: str, query: str, entry: dict) -> list:
+    import urllib.error
+    import urllib.request
+
+    if not SUPABASE_SERVICE_ROLE_KEY:
+        raise HTTPException(
+            status_code=503,
+            detail="Editing existing links requires SUPABASE_SERVICE_ROLE_KEY to be set in the server environment.",
+        )
+    url = f"{SUPABASE_URL}/rest/v1/{table}?{query}"
+    data = json.dumps(entry).encode("utf-8")
+    req = urllib.request.Request(
+        url,
+        data=data,
+        method="PATCH",
+        headers={
+            "apikey": SUPABASE_SERVICE_ROLE_KEY,
+            "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+            "Content-Type": "application/json",
+            "Prefer": "return=representation",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", "replace")
+        raise HTTPException(status_code=502, detail=f"Supabase update failed ({e.code}): {body}")
+    except urllib.error.URLError as e:
+        raise HTTPException(status_code=502, detail=f"Supabase unreachable: {e.reason}")
+
+
 def _invite_read() -> list:
     try:
         with open(
@@ -605,7 +638,7 @@ def admin_create_invite(body: dict, authorization: str = Header(default="")):
             _supabase_ideas_seeded_list() if _using_supabase() else _ideas_local_list()
         )
         available_labels = {str(entry.get("label", "")) for entry in available}
-        if any(label not in available_labels for label in requested_ideas):
+        if any(label not in available_labels and label not in DEFAULT_IDEAS for label in requested_ideas):
             raise HTTPException(status_code=400, detail="Choose date ideas from the current list")
         # An empty selection means use the built-in choices for this invite.
         idea_labels = requested_ideas or DEFAULT_IDEAS
@@ -620,6 +653,41 @@ def admin_create_invite(body: dict, authorization: str = Header(default="")):
             entries.append(row)
             _invite_write(entries)
     return {"ok": True, "invite": row}
+
+
+@app.patch("/api/admin/invites/{name}")
+def admin_update_invite(name: str, body: dict, authorization: str = Header(default="")):
+    token = authorization.removeprefix("Bearer ").strip()
+    if not _verify_token(token):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    requested_ideas = body.get("idea_labels")
+    if not isinstance(requested_ideas, list) or any(
+        not isinstance(label, str) for label in requested_ideas
+    ):
+        raise HTTPException(status_code=400, detail="Date ideas must be a list of labels")
+    available = _supabase_ideas_seeded_list() if _using_supabase() else _ideas_local_list()
+    available_labels = {str(entry.get("label", "")) for entry in available}
+    if any(label not in available_labels and label not in DEFAULT_IDEAS for label in requested_ideas):
+        raise HTTPException(status_code=400, detail="Choose date ideas from the current list")
+    idea_labels = requested_ideas or DEFAULT_IDEAS
+    lowered = name.strip().lower()
+    if _using_supabase():
+        rows = _rest_patch(
+            INVITES_URL,
+            f"name=eq.{urllib.parse.quote(lowered)}",
+            {"idea_labels": idea_labels},
+        )
+        if not rows:
+            raise HTTPException(status_code=404, detail="Invite not found or update not permitted")
+        invite = rows[0]
+    else:
+        entries = _invite_read()
+        invite = next((entry for entry in entries if entry.get("name", "").lower() == lowered), None)
+        if invite is None:
+            raise HTTPException(status_code=404, detail="Invite not found")
+        invite["idea_labels"] = idea_labels
+        _invite_write(entries)
+    return {"ok": True, "invite": invite}
 
 
 @app.delete("/api/admin/invites/{name}")

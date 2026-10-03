@@ -1030,6 +1030,12 @@
   gap: 10px;
 }
 
+.admin-invite-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .admin-invite-row {
   display: flex;
   align-items: center;
@@ -1039,6 +1045,21 @@
   border: 1px solid #2e2a3c;
   border-radius: 12px;
   padding: 8px 10px 8px 14px;
+}
+
+.admin-invite-idea-editor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 10px 14px;
+  border: 1px solid #2e2a3c;
+  border-radius: 10px;
+  background: #14121a;
+}
+
+.admin-edit-ideas {
+  background: #383144;
 }
 
 .admin-invite-name {

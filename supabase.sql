@@ -48,6 +48,7 @@ create table if not exists public.invites (
 alter table public.invites add column if not exists idea_labels jsonb;
 alter table public.invites enable row level security;
 grant select, insert, delete on public.invites to anon;
+grant update on public.invites to service_role;
 
 drop policy if exists "allow anonymous invite reads" on public.invites;
 create policy "allow anonymous invite reads" on public.invites
@@ -56,6 +57,11 @@ create policy "allow anonymous invite reads" on public.invites
 drop policy if exists "allow anonymous invite inserts" on public.invites;
 create policy "allow anonymous invite inserts" on public.invites
   for insert to anon with check (true);
+
+drop policy if exists "allow anonymous invite updates" on public.invites;
+drop policy if exists "allow service role invite updates" on public.invites;
+create policy "allow service role invite updates" on public.invites
+  for update to service_role using (true) with check (true);
 
 drop policy if exists "allow anonymous invite deletes" on public.invites;
 create policy "allow anonymous invite deletes" on public.invites
