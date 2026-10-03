@@ -563,7 +563,7 @@ function AskHerOut() {
       const res = await fetch("/api/answer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...payload, person, at: new Date().toISOString() }),
+        body: JSON.stringify({ ...payload, person }),
       });
       if (res.ok) {
         const data = await res.json();

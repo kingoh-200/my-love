@@ -4,6 +4,21 @@ import "@fortawesome/fontawesome-free/css/solid.min.css";
 
 const TOKEN_KEY = "admin_token";
 
+function formatRecordedAt(value) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return new Intl.DateTimeFormat(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    timeZoneName: "short",
+  }).format(date);
+}
+
 function Admin() {
   const [token, setToken] = useState(() => sessionStorage.getItem(TOKEN_KEY) || "");
   const [passcode, setPasscode] = useState("");
@@ -523,7 +538,7 @@ function Admin() {
                     <td>{r.reason || "—"}</td>
                     <td>{r.date_text || "—"}</td>
                     <td>{r.time_text || "—"}</td>
-                    <td>{r.at ? new Date(r.at).toLocaleString() : "—"}</td>
+                    <td>{formatRecordedAt(r.at || r.created_at)}</td>
                     <td>
                       {confirmId === r.id ? (
                         <span className="admin-confirm">

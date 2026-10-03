@@ -110,7 +110,6 @@ class Answer(BaseModel):
     date_text: str = ""
     time_text: str = ""
     person: str = ""
-    at: str = ""
     row_id: Optional[int] = None
 
 
@@ -350,7 +349,6 @@ def log_answer(answer: Answer):
         if answer.person:
             fields["person"] = answer.person
         if fields:
-            fields["at"] = answer.at or now
             if _using_supabase():
                 rows = _supabase_update(answer.row_id, fields)
                 row = rows[0] if rows else {"id": answer.row_id, **fields}
@@ -371,7 +369,7 @@ def log_answer(answer: Answer):
         "accepted": answer.accepted,
         "reason": answer.reason,
         "person": answer.person,
-        "at": answer.at or now,
+        "at": now,
     }
     if _using_supabase():
         row = _supabase_insert(entry)
