@@ -665,12 +665,31 @@ def admin_update_invite(name: str, body: dict, authorization: str = Header(defau
         not isinstance(label, str) for label in requested_ideas
     ):
         raise HTTPException(status_code=400, detail="Date ideas must be a list of labels")
+    lowered = name.strip().lower()
+    if _using_supabase():
+        existing_rows = _rest_select(
+            INVITES_URL,
+            f"select=name,idea_labels&name=eq.{urllib.parse.quote(lowered)}",
+        )
+        if not existing_rows:
+            raise HTTPException(status_code=404, detail="Invite not found")
+        current_invite = existing_rows[0]
+    else:
+        entries = _invite_read()
+        current_invite = next(
+            (entry for entry in entries if entry.get("name", "").lower() == lowered),
+            None,
+        )
+        if current_invite is None:
+            raise HTTPException(status_code=404, detail="Invite not found")
+
     available = _supabase_ideas_seeded_list() if _using_supabase() else _ideas_local_list()
     available_labels = {str(entry.get("label", "")) for entry in available}
-    if any(label not in available_labels and label not in DEFAULT_IDEAS for label in requested_ideas):
+    current_labels = current_invite.get("idea_labels") or []
+    allowed_labels = available_labels | set(DEFAULT_IDEAS) | set(current_labels)
+    if any(label not in allowed_labels for label in requested_ideas):
         raise HTTPException(status_code=400, detail="Choose date ideas from the current list")
     idea_labels = requested_ideas or DEFAULT_IDEAS
-    lowered = name.strip().lower()
     if _using_supabase():
         rows = _rest_patch(
             INVITES_URL,
@@ -681,10 +700,7 @@ def admin_update_invite(name: str, body: dict, authorization: str = Header(defau
             raise HTTPException(status_code=404, detail="Invite not found or update not permitted")
         invite = rows[0]
     else:
-        entries = _invite_read()
-        invite = next((entry for entry in entries if entry.get("name", "").lower() == lowered), None)
-        if invite is None:
-            raise HTTPException(status_code=404, detail="Invite not found")
+        invite = current_invite
         invite["idea_labels"] = idea_labels
         _invite_write(entries)
     return {"ok": True, "invite": invite}
