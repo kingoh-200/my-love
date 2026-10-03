@@ -277,6 +277,12 @@
   transform: translateY(-50%) scale(0.95);
 }
 
+@media (hover: none) and (pointer: coarse) {
+  .question-card .btn.yes {
+    transform: scale(1) !important;
+  }
+}
+
 .broken {
   position: fixed;
   transform: translate(-50%, -50%);
