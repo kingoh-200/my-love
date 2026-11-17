@@ -540,6 +540,9 @@ function DateReceipt({ date, time, person, onContinue }) {
     const context = canvas.getContext("2d");
     context.fillStyle = "#f8fbff";
     context.fillRect(0, 0, canvas.width, canvas.height);
+    context.strokeStyle = "#d5e3f5";
+    context.lineWidth = 3;
+    context.strokeRect(24, 24, canvas.width - 48, canvas.height - 48);
     context.fillStyle = "#0c1d34";
     context.fillRect(0, 0, canvas.width, 260);
     context.textAlign = "center";
@@ -549,6 +552,25 @@ function DateReceipt({ date, time, person, onContinue }) {
     context.fillStyle = "#f0f7ff";
     context.font = "700 66px sans-serif";
     context.fillText("DATE RECEIPT", 450, 166);
+    context.save();
+    context.translate(760, 174);
+    context.rotate(-0.17);
+    context.strokeStyle = "#fb7185";
+    context.fillStyle = "#fb7185";
+    context.lineWidth = 5;
+    context.beginPath();
+    context.arc(0, 0, 66, 0, Math.PI * 2);
+    context.stroke();
+    context.beginPath();
+    context.arc(0, 0, 57, 0, Math.PI * 2);
+    context.lineWidth = 2;
+    context.stroke();
+    context.textAlign = "center";
+    context.font = "700 27px monospace";
+    context.fillText("LOVE", 0, 3);
+    context.font = "24px sans-serif";
+    context.fillText("♥", 0, 34);
+    context.restore();
     context.fillStyle = "#3b82f6";
     context.fillRect(84, 324, 732, 3);
     context.textAlign = "left";
@@ -611,6 +633,7 @@ function DateReceipt({ date, time, person, onContinue }) {
           <span className="receipt-kicker">A LITTLE SOMETHING TO LOOK FORWARD TO</span>
           <h3>DATE RECEIPT</h3>
           <span className="receipt-status"><i /> CONFIRMED</span>
+          <span className="receipt-love-stamp" aria-label="Stamped with love"><b>LOVE</b><i>♥</i></span>
         </div>
         <div className="receipt-details">
           <div className="receipt-line">

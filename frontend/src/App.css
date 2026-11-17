@@ -1269,6 +1269,7 @@
 }
 
 .receipt-top {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1334,6 +1335,36 @@
   box-shadow: 0 0 10px rgba(52, 211, 153, 0.7);
 }
 
+.receipt-love-stamp {
+  position: absolute;
+  top: 54px;
+  right: 16px;
+  display: flex;
+  width: 72px;
+  height: 72px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  border: 2px dashed #fb7185;
+  border-radius: 50%;
+  color: #fb7185;
+  line-height: 1;
+  transform: rotate(11deg);
+  box-shadow: 0 0 0 3px rgba(251, 113, 133, 0.12), inset 0 0 0 3px rgba(251, 113, 133, 0.1);
+}
+
+.receipt-love-stamp b {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+}
+
+.receipt-love-stamp i {
+  font-size: 20px;
+  font-style: normal;
+}
+
 .receipt-details {
   display: flex;
   flex-direction: column;
@@ -1394,6 +1425,13 @@
 
   .receipt-top h3 {
     font-size: 23px;
+  }
+
+  .receipt-love-stamp {
+    top: 52px;
+    right: 10px;
+    width: 62px;
+    height: 62px;
   }
 
   .receipt-details {
