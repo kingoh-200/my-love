@@ -745,6 +745,59 @@
   animation: pulse 1.6s ease-in-out infinite;
 }
 
+.date-night-icon {
+  display: grid;
+  width: 64px;
+  height: 64px;
+  place-items: center;
+  border: 1px solid rgba(125, 211, 252, 0.3);
+  border-radius: 50%;
+  color: var(--accent-soft);
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.2), rgba(10, 20, 36, 0.2));
+  box-shadow: 0 0 28px rgba(56, 189, 248, 0.18);
+  font-size: 27px;
+}
+
+.custom-idea-form {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
+  text-align: left;
+}
+
+.custom-idea-form label {
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.custom-idea-row {
+  display: flex;
+  gap: 8px;
+}
+
+.custom-idea-row input {
+  min-width: 0;
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 11px 12px;
+  color: var(--text-h);
+  background: rgba(5, 13, 25, 0.8);
+}
+
+.custom-idea-row .btn {
+  padding: 10px 14px;
+  font-size: 11px;
+}
+
+.custom-idea-row .btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 @keyframes pulse {
   0%,
   100% {

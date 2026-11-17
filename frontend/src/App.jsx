@@ -723,6 +723,7 @@ function NotFound() {
 function AskHerOut() {
   const [stage, setStage] = useState("envelope");
   const [chosen, setChosen] = useState(null);
+  const [customIdea, setCustomIdea] = useState("");
   const [datePlan, setDatePlan] = useState(null);
   const [person] = useState(personFromUrl);
   // Invite-only: with no name in the URL there is no letter to open — the
@@ -903,7 +904,7 @@ function AskHerOut() {
         <h2 className="title">IT'S A DATE!</h2>
         <p className="subtitle">You just made my whole week.</p>
         <div className="card celebrate-card">
-          <p className="big-heart">{"<3"}</p>
+          <span className="date-night-icon" aria-hidden="true"><i className="fa-solid fa-martini-glass-citrus" /></span>
           <p>So… what are we doing?</p>
           <div className="chips">
             {ideas.map((idea) => (
@@ -917,6 +918,13 @@ function AskHerOut() {
               </button>
             ))}
           </div>
+          <form className="custom-idea-form" onSubmit={(event) => { event.preventDefault(); if (customIdea.trim()) { handleChip(customIdea.trim()); setCustomIdea(""); } }}>
+            <label htmlFor="custom-date-idea">Or suggest your own idea</label>
+            <div className="custom-idea-row">
+              <input id="custom-date-idea" value={customIdea} onChange={(event) => setCustomIdea(event.target.value)} maxLength={60} placeholder="Your fun date idea…" />
+              <button type="submit" className="btn yes" disabled={!customIdea.trim()}>Add idea</button>
+            </div>
+          </form>
           {chosen && <p className="chosen">Excellent choice. It's a plan!</p>}
           {datePlan && (
             <button type="button" className="btn yes receipt-open-btn" onClick={() => setStage("receipt")}>
