@@ -72,7 +72,7 @@ IDEAS_URL = "ideas"
 
 # The celebration chips are admin-editable; these seed the store on first
 # use and also serve as a resilient fallback if the ideas table is missing.
-DEFAULT_IDEAS = ["Coffee ☕", "Dinner 🍝", "A movie 🎬", "Stargazing 🌌", "Ice cream 🍦"]
+DEFAULT_IDEAS = ["Coffee", "Dinner", "A movie", "Stargazing", "Ice cream"]
 
 
 def _make_token() -> str:

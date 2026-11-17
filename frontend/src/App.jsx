@@ -10,7 +10,7 @@ function personFromUrl() {
   return q ? decodeURIComponent(q) : "";
 }
 
-const CONFETTI_COLORS = ["#ff5d8f", "#ffb3c6", "#ffd166", "#a0e7a0", "#8ecae6", "#c77dff"];
+const CONFETTI_COLORS = ["#3b82f6", "#60a5fa", "#22d3ee", "#1d4ed8", "#93c5fd", "#0ea5e9"];
 
 // Tiny seeded PRNG so decorative randomness is stable across re-renders.
 function mulberry32(seed) {
@@ -41,6 +41,82 @@ function Logo() {
   );
 }
 
+/* Two mascots, drawn as line-art SVG so they sit inside the technical look:
+   a lifter for the moment before the answer, dancers for afterwards. */
+function RobotLifting() {
+  return (
+    <svg
+      className="robot robot-lift"
+      viewBox="0 0 64 80"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <g className="robot-bar">
+        <path d="M22 50 11 22" />
+        <path d="M42 50 53 22" />
+        <path d="M10 20h44" />
+        <rect x="2" y="12" width="8" height="16" rx="2" />
+        <rect x="54" y="12" width="8" height="16" rx="2" />
+      </g>
+      <path d="M32 20v-6" />
+      <circle cx="32" cy="12" r="1.8" fill="currentColor" stroke="none" />
+      <rect x="22" y="26" width="20" height="16" rx="4" />
+      <circle cx="28" cy="33" r="1.6" fill="currentColor" stroke="none" />
+      <circle cx="36" cy="33" r="1.6" fill="currentColor" stroke="none" />
+      <path d="M29 37q3 2.5 6 0" />
+      <path d="M32 42v4" />
+      <rect x="20" y="46" width="24" height="18" rx="4" />
+      <rect x="27" y="52" width="10" height="7" rx="2" />
+      <path d="M26 64v10M38 64v10" />
+      <path d="M22 74h8M34 74h8" />
+    </svg>
+  );
+}
+
+const DANCE_POSES = {
+  up: { left: "M21 38 11 25", right: "M43 38 53 25", leftHand: [11, 25], rightHand: [53, 25] },
+  out: { left: "M21 38 9 46", right: "M43 38 55 46", leftHand: [9, 46], rightHand: [55, 46] },
+};
+
+function RobotDancing({ pose = "up", wink = false }) {
+  const arms = DANCE_POSES[pose] || DANCE_POSES.up;
+  return (
+    <svg
+      className="robot robot-dancer"
+      viewBox="0 0 64 76"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M32 14V8" />
+      <circle cx="32" cy="6" r="1.8" fill="currentColor" stroke="none" />
+      <rect x="22" y="14" width="20" height="16" rx="4" />
+      <circle cx="28" cy="21" r="1.6" fill="currentColor" stroke="none" />
+      {wink ? (
+        <path d="M34 21h4" />
+      ) : (
+        <circle cx="36" cy="21" r="1.6" fill="currentColor" stroke="none" />
+      )}
+      <path d="M28 26q3 2 6 0" />
+      <path d={arms.left} />
+      <path d={arms.right} />
+      <circle cx={arms.leftHand[0]} cy={arms.leftHand[1]} r="2" fill="currentColor" stroke="none" />
+      <circle cx={arms.rightHand[0]} cy={arms.rightHand[1]} r="2" fill="currentColor" stroke="none" />
+      <rect x="21" y="34" width="22" height="18" rx="4" />
+      <rect x="27" y="40" width="10" height="6" rx="2" />
+      <path d="M28 52v12M36 52v12" />
+      <path d="M24 64h8M32 64h8" />
+    </svg>
+  );
+}
+
 function Envelope({ onOpen, person }) {
   return (
     <div className="stage">
@@ -53,8 +129,8 @@ function Envelope({ onOpen, person }) {
           <span className="glow" />
         </button>
       </div>
-      {person && <p className="addressed script">for {person} 💕</p>}
-      <p className="hint">tap to open 💌</p>
+      {person && <p className="addressed script">for {person}</p>}
+      <p className="hint">tap to open</p>
     </div>
   );
 }
@@ -67,7 +143,6 @@ function HeartsRain({ count = 24 }) {
       left: rand() * 100,
       delay: rand() * 6,
       duration: 7 + rand() * 6,
-      size: 10 + rand() * 16,
       drift: rand() * 60 - 30,
       opacity: 0.25 + rand() * 0.5,
     }));
@@ -81,22 +156,19 @@ function HeartsRain({ count = 24 }) {
             left: `${h.left}%`,
             animationDelay: `${h.delay}s`,
             animationDuration: `${h.duration}s`,
-            fontSize: `${h.size}px`,
             opacity: h.opacity,
             ["--drift"]: `${h.drift}px`,
           }}
-        >
-          ❤
-        </span>
+        />
       ))}
     </div>
   );
 }
 
 /* ---------------------------------------------------------------
-   Bikini-Bottom-style scene animations — one per stage
-   (emoji homage: sponge 🧽, shell 🐚, star ⭐, snail 🐌,
-    boat 🫼, bubbles 🫧, jellyfish 🪼, crab 🦀)
+   Ambient scene animations — one per stage. Everything is drawn from
+   CSS shapes and monospace glyphs: bubbles, hex packets, a trace line
+   and floating brackets. No emoji anywhere.
 --------------------------------------------------------------- */
 
 function BubblesScene() {
@@ -112,7 +184,6 @@ function BubblesScene() {
   }, []);
   return (
     <div className="scene" aria-hidden="true">
-      <span className="sea-critter critter-shell">🐚</span>
       {bubbles.map((b) => (
         <span
           key={b.id}
@@ -138,7 +209,7 @@ function JellyfishScene() {
       top: 8 + rand() * 55,
       delay: rand() * 10,
       duration: 12 + rand() * 8,
-      size: 22 + rand() * 22,
+      size: 11 + rand() * 7,
     }));
   }, []);
   return (
@@ -154,11 +225,9 @@ function JellyfishScene() {
             fontSize: `${j.size}px`,
           }}
         >
-          🪼
+          {`0x${(0x7f00 + j.id * 0x11).toString(16)}`}
         </span>
       ))}
-      <span className="sea-critter critter-star">⭐</span>
-      <span className="sea-critter critter-crab">🦀</span>
     </div>
   );
 }
@@ -166,30 +235,34 @@ function JellyfishScene() {
 function SnailScene() {
   return (
     <div className="scene" aria-hidden="true">
-      <span className="snail">🐌</span>
-      <span className="sea-critter critter-boat">🫼</span>
-      <span className="sea-critter critter-star">⭐</span>
+      <span className="trace" />
+      <span className="snail">{"[==========>"}</span>
     </div>
   );
 }
 
 function PartyScene() {
-  const dancers = ["🧽", "🐚", "⭐", "🦀"];
+  const robots = [
+    { slot: "slot-a", pose: "up", wink: false },
+    { slot: "slot-b", pose: "out", wink: true },
+    { slot: "slot-c", pose: "up", wink: true },
+  ];
   return (
     <div className="scene" aria-hidden="true">
-      {dancers.map((d, i) => (
-        <span key={d} className="dancer" style={{ animationDelay: `${i * 0.18}s` }}>
-          {d}
+      {robots.map((robot, i) => (
+        <span
+          key={robot.slot}
+          className={`robot-slot ${robot.slot}`}
+          style={{ animationDelay: `${i * 0.25}s` }}
+        >
+          <RobotDancing pose={robot.pose} wink={robot.wink} />
         </span>
       ))}
-      <span className="party-bubble b1">🫧</span>
-      <span className="party-bubble b2">🫧</span>
-      <span className="party-bubble b3">🫧</span>
     </div>
   );
 }
 
-const DATE_IDEAS = ["Coffee ☕", "Dinner 🍝", "A movie 🎬", "Stargazing 🌌", "Ice cream 🍦"];
+const DATE_IDEAS = ["Coffee", "Dinner", "A movie", "Stargazing", "Ice cream"];
 
 function Question({ onYes, person }) {
   const [noCount, setNoCount] = useState(0);
@@ -223,19 +296,19 @@ function Question({ onYes, person }) {
   };
 
   const playfulLines = [
-    "Are you sure? 🥺",
-    "Really sure? 🥹",
-    "Think again… 💭",
-    "That button is getting tired 😤",
-    "You can't catch it anyway 😜",
-    "Just say yes already 🙏",
-    "It's destiny at this point ✨",
+    "Are you sure?",
+    "Really sure?",
+    "Think again…",
+    "That button is getting tired",
+    "You can't catch it anyway",
+    "Just say yes already",
+    "It's destiny at this point",
   ];
   const nudge = playfulLines[Math.min(noCount - 1, playfulLines.length - 1)];
 
   return (
     <div className="stage">
-      <h2 className="title">{person ? `Hey ${person} 💕` : "Hey you 💕"}</h2>
+      <h2 className="title">{person ? `Hey ${person}` : "Hey you"}</h2>
       <p className="subtitle">There's something I've been meaning to ask…</p>
 
       <div className="card question-card">
@@ -243,7 +316,7 @@ function Question({ onYes, person }) {
 
         <div className="buttons" ref={parentRef}>
           <button type="button" className="btn yes" style={{ ["--yes-scale"]: yesScale }} onClick={onYes}>
-            Yes! 💖
+            Yes!
           </button>
 
           <button type="button" className="btn no" style={noStyle ? { left: noStyle.left, top: noStyle.top, position: "fixed" } : undefined} onMouseEnter={fleeNo} onMouseDown={fleeNo} onTouchStart={fleeNo} onFocus={fleeNo}>
@@ -258,12 +331,18 @@ function Question({ onYes, person }) {
           style={{ left: flying.x, top: flying.y }}
           onAnimationEnd={() => setFlying(null)}
         >
-          💔
+          404
         </span>
       )}
 
       {nudge && <p className="nudge">{nudge}</p>}
-      <p className="teaser">Psst… the Yes button grows a little with every No 😉</p>
+
+      <div className="robot-mascot">
+        <RobotLifting />
+        <span className="robot-caption">// warming up for your answer</span>
+      </div>
+
+      <p className="teaser">Psst… the Yes button grows a little with every No.</p>
     </div>
   );
 }
@@ -271,16 +350,16 @@ function Question({ onYes, person }) {
 function Confirm({ onReallyYes, onRethink, person }) {
   return (
     <div className="stage">
-      <h2 className="title">{person ? `WAIT… ${person}?! 😳` : "WAIT… really?! 😳"}</h2>
+      <h2 className="title">{person ? `WAIT… ${person}?!` : "WAIT… really?!"}</h2>
       <p className="subtitle">Did you really say yes? Because my heart just did a backflip.</p>
       <div className="card confirm-card">
-        <p className="big-heart">😳💖</p>
+        <p className="big-heart">{"<3"}</p>
         <div className="buttons confirm-buttons">
           <button type="button" className="btn yes" onClick={onReallyYes}>
-            Yes, really! 💘
+            Yes, really!
           </button>
           <button type="button" className="btn rethink" onClick={onRethink}>
-            Wait, let me rethink 🙈
+            Wait, let me rethink
           </button>
         </div>
       </div>
@@ -289,11 +368,11 @@ function Confirm({ onReallyYes, onRethink, person }) {
 }
 
 const DAY_OPTIONS = [
-  "This Saturday 🎉",
-  "This Sunday 😌",
-  "Next Friday 🌆",
-  "Next weekend 🗓️",
-  "I'm flexible 😉",
+  "This Saturday",
+  "This Sunday",
+  "Next Friday",
+  "Next weekend",
+  "I'm flexible",
 ];
 
 const TIME_OPTIONS = [
@@ -343,15 +422,15 @@ function WhenFree({ onPick }) {
   const hint = complete
     ? null
     : pickedDay
-      ? "Great! Now pick a time ⏰"
+      ? "Great! Now pick a time."
       : pickedTime
-        ? "Almost! Which day should I keep free? 📅"
+        ? "Almost! Which day should I keep free?"
         : "Pick a day and a time — then lock it in.";
 
   return (
     <div className="stage">
-      <h2 className="title">When are you free? 📅</h2>
-      <p className="subtitle">Two little steps so I can plan this properly 😉</p>
+      <h2 className="title">When are you free?</h2>
+      <p className="subtitle">Two little steps so I can plan this properly.</p>
       <div className="card when-card">
         <div className="step-block">
           <div className="step-head">
@@ -401,7 +480,7 @@ function WhenFree({ onPick }) {
               </>
             )}
           </div>
-          {!pickedDay && <p className="step-hint">Choose a day first ☝️</p>}
+          {!pickedDay && <p className="step-hint">Choose a day first</p>}
           <div className="chips time-grid">
             {TIME_OPTIONS.map((t) => (
               <button
@@ -431,7 +510,7 @@ function WhenFree({ onPick }) {
         <div className="lock-row">
           {complete ? (
             <p className="chosen">
-              📅 {prettyDay(pickedDay)} · ⏰ {prettyTime(pickedTime)} — lock it in?
+              {prettyDay(pickedDay)} · {prettyTime(pickedTime)} — lock it in?
             </p>
           ) : (
             <p className="time-hint nudge-text">{hint}</p>
@@ -442,7 +521,7 @@ function WhenFree({ onPick }) {
             onClick={() => onPick(pickedDay, pickedTime)}
             disabled={!complete}
           >
-            Lock it in 🔒
+            Lock it in
           </button>
         </div>
       </div>
@@ -494,12 +573,12 @@ function NotFound() {
     <div className="app">
       <HeartsRain count={10} />
       <div className="stage">
-        <h2 className="title">404 💌</h2>
+        <h2 className="title">Not found</h2>
         <p className="subtitle">
           This letter isn't addressed to anyone — no invite found for this link.
         </p>
         <div className="card notfound-card">
-          <p className="big-heart">🔍</p>
+          <p className="big-heart">404</p>
           <p>Double-check the link you were sent, or ask for a fresh one.</p>
         </div>
       </div>
@@ -620,7 +699,7 @@ function AskHerOut() {
       <div className="app">
         <HeartsRain count={8} />
         <div className="stage">
-          <p className="hint">sealing the envelope… 💌</p>
+          <p className="hint">verifying invite…</p>
         </div>
       </div>
     );
@@ -676,10 +755,10 @@ function AskHerOut() {
       <Confetti />
       <PartyScene />
       <div className="stage">
-        <h2 className="title">IT'S A DATE! 🎉</h2>
-        <p className="subtitle">You just made my whole week 💘</p>
+        <h2 className="title">IT'S A DATE!</h2>
+        <p className="subtitle">You just made my whole week.</p>
         <div className="card celebrate-card">
-          <p className="big-heart">💖</p>
+          <p className="big-heart">{"<3"}</p>
           <p>So… what are we doing?</p>
           <div className="chips">
             {ideas.map((idea) => (
@@ -693,7 +772,7 @@ function AskHerOut() {
               </button>
             ))}
           </div>
-          {chosen && <p className="chosen">Excellent choice. It's a plan! 🥂</p>}
+          {chosen && <p className="chosen">Excellent choice. It's a plan!</p>}
         </div>
       </div>
     </div>

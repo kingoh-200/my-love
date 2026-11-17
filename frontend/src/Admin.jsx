@@ -3,7 +3,7 @@ import "@fortawesome/fontawesome-free/css/fontawesome.min.css";
 import "@fortawesome/fontawesome-free/css/solid.min.css";
 
 const TOKEN_KEY = "admin_token";
-const DEFAULT_IDEA_LABELS = ["Coffee ☕", "Dinner 🍝", "A movie 🎬", "Stargazing 🌌", "Ice cream 🍦"];
+const DEFAULT_IDEA_LABELS = ["Coffee", "Dinner", "A movie", "Stargazing", "Ice cream"];
 
 function formatRecordedAt(value) {
   if (!value) return "—";
@@ -520,7 +520,7 @@ function Admin() {
           <input
             value={ideaInput}
             onChange={(e) => setIdeaInput(e.target.value)}
-            placeholder="Add an idea, e.g. Bowling 🎳"
+            placeholder="Add an idea, e.g. Bowling"
             maxLength={60}
           />
           <button type="submit" className="admin-btn" disabled={!ideaInput.trim() || addingIdea || !ideasConfigured}>

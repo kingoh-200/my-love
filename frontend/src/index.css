@@ -1,87 +1,93 @@
 :root {
-  --pink: #ff5d8f;
-  --pink-deep: #e0447c;
-  --pink-soft: #ffb3c6;
-  --cream: #fff6f9;
-  --deep: #4a2040;
-  --text: #6b2b4f;
-  --text-h: #3d1030;
-  --bg: #fff6f9;
-  --card: #ffffff;
-  --border: #ffd6e2;
-  --shadow: rgba(255, 93, 143, 0.25);
+  --accent: #3b82f6;
+  --accent-deep: #1d4ed8;
+  --accent-soft: #93c5fd;
+  --cyan: #22d3ee;
+  --bg: #060a14;
+  --card: #0d1728;
+  --panel: #0a1424;
+  --ink: #dbeafe;
+  --text: #9db4d0;
+  --text-h: #e8f1ff;
+  --border: #1d3352;
+  --shadow: rgba(2, 8, 20, 0.7);
 
-  --sans: "Quicksand", "Segoe UI", system-ui, Roboto, sans-serif;
-  --script: "Parisienne", "Segoe Script", cursive;
+  --sans: "Inter", "Segoe UI", system-ui, Roboto, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   font-family: var(--sans);
-  font-size: 18px;
-  line-height: 1.5;
+  font-size: 17px;
+  line-height: 1.6;
   color: var(--text);
   background: var(--bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  color-scheme: dark;
 }
 
 * {
   box-sizing: border-box;
-}body {
+}
+
+body {
   margin: 0;
   min-height: 100svh;
-  background:
-    radial-gradient(1200px 600px at 80% -10%, #ffe3ee 0%, transparent 60%),
-    radial-gradient(900px 500px at -10% 110%, #ffe9f2 0%, transparent 55%),
-    var(--bg);
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(to right, rgba(59, 130, 246, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(59, 130, 246, 0.06) 1px, transparent 1px),
+    radial-gradient(120% 100% at 50% 42%, transparent 42%, rgba(2, 7, 16, 0.8) 100%),
+    radial-gradient(900px 620px at 50% -15%, rgba(37, 99, 235, 0.28), transparent 62%),
+    radial-gradient(760px 520px at 88% 112%, rgba(34, 211, 238, 0.12), transparent 60%);
+  background-size:
+    48px 48px,
+    48px 48px,
+    100% 100%,
+    auto,
+    auto;
+  background-attachment: fixed;
 }
 
-/* Ambient glow blobs — pure CSS, behind everything. */
-body::before,
-body::after {
+/* Thin scanning line — the only ambient motion, kept subtle. */
+body::before {
   content: "";
   position: fixed;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.55;
-  z-index: 0;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.55), transparent);
+  animation: scanline 9s linear infinite;
   pointer-events: none;
+  z-index: 3;
 }
 
-body::before {
-  width: 420px;
-  height: 420px;
-  left: -140px;
-  top: -120px;
-  background: radial-gradient(circle, rgba(255, 93, 143, 0.35), transparent 70%);
-  animation: blobDrift 18s ease-in-out infinite;
-}
-
-body::after {
-  width: 480px;
-  height: 480px;
-  right: -160px;
-  bottom: -140px;
-  background: radial-gradient(circle, rgba(199, 125, 255, 0.28), transparent 70%);
-  animation: blobDrift 22s ease-in-out infinite reverse;
-}
-
-@keyframes blobDrift {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
+@keyframes scanline {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
   }
-  50% {
-    transform: translate(40px, 30px) scale(1.12);
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh);
+    opacity: 0;
   }
 }
 
 ::selection {
-  background: rgba(255, 93, 143, 0.35);
+  background: rgba(59, 130, 246, 0.4);
+  color: #eaf3ff;
 }
 
 :focus-visible {
-  outline: 3px solid rgba(255, 93, 143, 0.6);
+  outline: 2px solid rgba(56, 189, 248, 0.7);
   outline-offset: 2px;
 }
 
@@ -106,6 +112,7 @@ p {
   margin: 0;
 }
 
-button {
+button,
+input {
   font-family: inherit;
 }

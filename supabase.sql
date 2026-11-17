@@ -94,11 +94,11 @@ create policy "allow anonymous idea deletes" on public.ideas
 insert into public.ideas (label)
 select defaults.label
 from (values
-  ('Coffee ☕'),
-  ('Dinner 🍝'),
-  ('A movie 🎬'),
-  ('Stargazing 🌌'),
-  ('Ice cream 🍦')
+  ('Coffee'),
+  ('Dinner'),
+  ('A movie'),
+  ('Stargazing'),
+  ('Ice cream')
 ) as defaults(label)
 where not exists (select 1 from public.ideas)
 on conflict (label) do nothing;
