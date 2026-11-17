@@ -529,6 +529,117 @@ function WhenFree({ onPick }) {
   );
 }
 
+function DateReceipt({ date, time, person, onContinue }) {
+  const dateLabel = prettyDay(date);
+  const timeLabel = prettyTime(time);
+
+  const downloadReceipt = () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 900;
+    canvas.height = 1120;
+    const context = canvas.getContext("2d");
+    context.fillStyle = "#f8fbff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = "#0c1d34";
+    context.fillRect(0, 0, canvas.width, 260);
+    context.textAlign = "center";
+    context.fillStyle = "#7dd3fc";
+    context.font = "500 27px monospace";
+    context.fillText("A LITTLE SOMETHING TO LOOK FORWARD TO", 450, 82);
+    context.fillStyle = "#f0f7ff";
+    context.font = "700 66px sans-serif";
+    context.fillText("DATE RECEIPT", 450, 166);
+    context.fillStyle = "#3b82f6";
+    context.fillRect(84, 324, 732, 3);
+    context.textAlign = "left";
+    context.fillStyle = "#58708c";
+    context.font = "500 25px monospace";
+    context.fillText("RESERVED FOR", 100, 420);
+    context.fillStyle = "#10243e";
+    context.font = "600 42px sans-serif";
+    context.fillText(person || "You & me", 100, 478);
+    context.fillStyle = "#58708c";
+    context.font = "500 25px monospace";
+    context.fillText("DATE", 100, 590);
+    context.fillStyle = "#10243e";
+    context.font = "600 42px sans-serif";
+    context.fillText(dateLabel, 100, 648);
+    context.fillStyle = "#58708c";
+    context.font = "500 25px monospace";
+    context.fillText("TIME", 100, 760);
+    context.fillStyle = "#10243e";
+    context.font = "600 42px sans-serif";
+    context.fillText(timeLabel, 100, 818);
+    context.setLineDash([10, 12]);
+    context.strokeStyle = "#b9c9dc";
+    context.beginPath();
+    context.moveTo(84, 890);
+    context.lineTo(816, 890);
+    context.stroke();
+    context.setLineDash([]);
+    context.textAlign = "center";
+    context.fillStyle = "#2563eb";
+    context.font = "600 30px sans-serif";
+    context.fillText("One date. Two people. A good story.", 450, 970);
+    context.fillStyle = "#718198";
+    context.font = "22px monospace";
+    context.fillText("CONFIRMED WITH A YES", 450, 1030);
+
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "date-receipt.png";
+      link.click();
+      URL.revokeObjectURL(url);
+    }, "image/png");
+  };
+
+  return (
+    <div className="stage receipt-stage">
+      <h2 className="title">It's officially a date</h2>
+      <p className="subtitle">Here's your little receipt. Save it for the big day.</p>
+      <p className="receipt-note">
+        {person
+          ? `${person}, your date is officially on the books! Download this little receipt before your future self asks, “Wait, what time was it?”`
+          : "Your date is officially on the books! Download this little receipt before your future self asks, “Wait, what time was it?”"}
+      </p>
+      <div className="date-receipt" aria-label={`Date receipt for ${dateLabel} at ${timeLabel}`}>
+        <div className="receipt-top">
+          <span className="receipt-mark"><Logo /></span>
+          <span className="receipt-kicker">A LITTLE SOMETHING TO LOOK FORWARD TO</span>
+          <h3>DATE RECEIPT</h3>
+          <span className="receipt-status"><i /> CONFIRMED</span>
+        </div>
+        <div className="receipt-details">
+          <div className="receipt-line">
+            <span>RESERVED FOR</span>
+            <strong>{person || "You & me"}</strong>
+          </div>
+          <div className="receipt-line">
+            <span>DATE</span>
+            <strong>{dateLabel}</strong>
+          </div>
+          <div className="receipt-line">
+            <span>TIME</span>
+            <strong>{timeLabel}</strong>
+          </div>
+        </div>
+        <div className="receipt-total">
+          <span>THE PLAN</span>
+          <strong>One date. Two people. A good story.</strong>
+        </div>
+        <p className="receipt-footer">KEEP THIS SOMEWHERE SAFE</p>
+      </div>
+      <div className="receipt-actions">
+        <button type="button" className="btn yes" onClick={downloadReceipt}>Download receipt</button>
+        <button type="button" className="btn rethink" onClick={onContinue}>Back to celebration</button>
+      </div>
+    </div>
+  );
+}
+
 function Confetti() {
   const pieces = useMemo(() => {
     const rand = mulberry32(42);
@@ -589,6 +700,7 @@ function NotFound() {
 function AskHerOut() {
   const [stage, setStage] = useState("envelope");
   const [chosen, setChosen] = useState(null);
+  const [datePlan, setDatePlan] = useState(null);
   const [person] = useState(personFromUrl);
   // Invite-only: with no name in the URL there is no letter to open — the
   // bare domain lands on the not-found page like a hand-edited link would.
@@ -670,6 +782,7 @@ function AskHerOut() {
   };
 
   const handleWhenPicked = async (day, time) => {
+    setDatePlan({ day, time });
     setStage("celebration");
     if (rowIdRef.current == null) {
       const id = await postAnswer({ accepted: true });
@@ -749,6 +862,15 @@ function AskHerOut() {
     );
   }
 
+  if (stage === "receipt" && datePlan) {
+    return (
+      <div className="app">
+        <HeartsRain count={16} />
+        <DateReceipt date={datePlan.day} time={datePlan.time} person={person} onContinue={() => setStage("celebration")} />
+      </div>
+    );
+  }
+
   return (
     <div className="app celebrate">
       <HeartsRain count={40} />
@@ -773,6 +895,11 @@ function AskHerOut() {
             ))}
           </div>
           {chosen && <p className="chosen">Excellent choice. It's a plan!</p>}
+          {datePlan && (
+            <button type="button" className="btn yes receipt-open-btn" onClick={() => setStage("receipt")}>
+              View date receipt
+            </button>
+          )}
         </div>
       </div>
     </div>
