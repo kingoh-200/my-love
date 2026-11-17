@@ -339,7 +339,7 @@ function Question({ onYes, person }) {
 
       <div className="robot-mascot">
         <RobotLifting />
-        <span className="robot-caption">// warming up for your answer</span>
+        <span className="robot-caption">warming up for your answer</span>
       </div>
 
       <p className="teaser">Psst… the Yes button grows a little with every No.</p>

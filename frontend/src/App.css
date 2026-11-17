@@ -35,14 +35,6 @@
   text-wrap: balance;
 }
 
-/* Monospace comment marker - the technical tell. */
-.title::before {
-  content: "// ";
-  color: var(--accent);
-  opacity: 0.6;
-  font-weight: 500;
-}
-
 /* Big soft gradient headline — matches the pink/violet ambience. */
 .title::after {
   content: "";
