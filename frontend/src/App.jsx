@@ -529,7 +529,7 @@ function WhenFree({ onPick }) {
   );
 }
 
-function DateReceipt({ date, time, person, onContinue }) {
+function DateReceipt({ date, time, person, idea, onContinue }) {
   const dateLabel = prettyDay(date);
   const timeLabel = prettyTime(time);
 
@@ -588,24 +588,30 @@ function DateReceipt({ date, time, person, onContinue }) {
     context.fillText(dateLabel, 100, 648);
     context.fillStyle = "#58708c";
     context.font = "500 25px monospace";
-    context.fillText("TIME", 100, 760);
+    context.fillText("TIME", 100, 738);
     context.fillStyle = "#10243e";
     context.font = "600 42px sans-serif";
-    context.fillText(timeLabel, 100, 818);
+    context.fillText(timeLabel, 100, 786);
+    context.fillStyle = "#58708c";
+    context.font = "500 25px monospace";
+    context.fillText("DATE IDEA", 100, 878);
+    context.fillStyle = "#10243e";
+    context.font = "600 38px sans-serif";
+    context.fillText(idea, 100, 928, 700);
     context.setLineDash([10, 12]);
     context.strokeStyle = "#b9c9dc";
     context.beginPath();
-    context.moveTo(84, 890);
-    context.lineTo(816, 890);
+    context.moveTo(84, 980);
+    context.lineTo(816, 980);
     context.stroke();
     context.setLineDash([]);
     context.textAlign = "center";
     context.fillStyle = "#2563eb";
-    context.font = "600 30px sans-serif";
-    context.fillText("One date. Two people. A good story.", 450, 970);
+    context.font = "600 27px sans-serif";
+    context.fillText("One date. Two people. A good story.", 450, 1030);
     context.fillStyle = "#718198";
     context.font = "22px monospace";
-    context.fillText("CONFIRMED WITH A YES", 450, 1030);
+    context.fillText("CONFIRMED WITH A YES", 450, 1080);
 
     canvas.toBlob((blob) => {
       if (!blob) return;
@@ -647,6 +653,10 @@ function DateReceipt({ date, time, person, onContinue }) {
           <div className="receipt-line">
             <span>TIME</span>
             <strong>{timeLabel}</strong>
+          </div>
+          <div className="receipt-line">
+            <span>DATE IDEA</span>
+            <strong>{idea}</strong>
           </div>
         </div>
         <div className="receipt-total">
@@ -890,7 +900,7 @@ function AskHerOut() {
     return (
       <div className="app">
         <HeartsRain count={16} />
-        <DateReceipt date={datePlan.day} time={datePlan.time} person={person} onContinue={() => setStage("celebration")} />
+        <DateReceipt date={datePlan.day} time={datePlan.time} person={person} idea={chosen} onContinue={() => setStage("celebration")} />
       </div>
     );
   }
@@ -926,7 +936,7 @@ function AskHerOut() {
             </div>
           </form>
           {chosen && <p className="chosen">Excellent choice. It's a plan!</p>}
-          {datePlan && (
+          {datePlan && chosen && (
             <button type="button" className="btn yes receipt-open-btn" onClick={() => setStage("receipt")}>
               View date receipt
             </button>
