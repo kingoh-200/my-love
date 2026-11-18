@@ -732,7 +732,8 @@ function NotFound() {
 
 function AskHerOut() {
   const [stage, setStage] = useState("envelope");
-  const [chosen, setChosen] = useState(null);
+  const [chosen, setChosen] = useState([]);
+  const [customIdeas, setCustomIdeas] = useState([]);
   const [customIdea, setCustomIdea] = useState("");
   const [datePlan, setDatePlan] = useState(null);
   const [person] = useState(personFromUrl);
@@ -827,18 +828,39 @@ function AskHerOut() {
     }
   };
 
-  const handleChip = async (idea) => {
-    setChosen(idea);
+  const saveIdeas = (ideasToSave) => {
+    const reason = ideasToSave.join(", ");
     if (rowIdRef.current != null) {
-      postAnswer({ accepted: true, reason: idea, row_id: rowIdRef.current });
+      postAnswer({ accepted: true, reason, row_id: rowIdRef.current });
     } else {
       // Yes-write still in flight: retry shortly with the row id once known.
       setTimeout(() => {
         if (rowIdRef.current != null) {
-          postAnswer({ accepted: true, reason: idea, row_id: rowIdRef.current });
+          postAnswer({ accepted: true, reason, row_id: rowIdRef.current });
         }
       }, 1500);
     }
+  };
+
+  const toggleIdea = (idea) => {
+    setChosen((current) => {
+      const next = current.includes(idea) ? current.filter((item) => item !== idea) : [...current, idea];
+      saveIdeas(next);
+      return next;
+    });
+  };
+
+  const addCustomIdea = (value) => {
+    const idea = value.trim();
+    if (!idea) return;
+    setCustomIdeas((current) => current.some((item) => item.toLowerCase() === idea.toLowerCase()) ? current : [...current, idea]);
+    setChosen((current) => {
+      if (current.includes(idea)) return current;
+      const next = [...current, idea];
+      saveIdeas(next);
+      return next;
+    });
+    setCustomIdea("");
   };
 
   if (inviteState === "checking") {
@@ -900,7 +922,7 @@ function AskHerOut() {
     return (
       <div className="app">
         <HeartsRain count={16} />
-        <DateReceipt date={datePlan.day} time={datePlan.time} person={person} idea={chosen} onContinue={() => setStage("celebration")} />
+        <DateReceipt date={datePlan.day} time={datePlan.time} person={person} idea={chosen.join(", ")} onContinue={() => setStage("celebration")} />
       </div>
     );
   }
@@ -917,26 +939,27 @@ function AskHerOut() {
           <span className="date-night-icon" aria-hidden="true"><i className="fa-solid fa-martini-glass-citrus" /></span>
           <p>So… what are we doing?</p>
           <div className="chips">
-            {ideas.map((idea) => (
+            {[...ideas, ...customIdeas].map((idea) => (
               <button
                 key={idea}
                 type="button"
-                className={`chip ${chosen === idea ? "chip-selected" : ""}`}
-                onClick={() => handleChip(idea)}
+                className={`chip ${chosen.includes(idea) ? "chip-selected" : ""}`}
+                aria-pressed={chosen.includes(idea)}
+                onClick={() => toggleIdea(idea)}
               >
                 {idea}
               </button>
             ))}
           </div>
-          <form className="custom-idea-form" onSubmit={(event) => { event.preventDefault(); if (customIdea.trim()) { handleChip(customIdea.trim()); setCustomIdea(""); } }}>
+          <form className="custom-idea-form" onSubmit={(event) => { event.preventDefault(); addCustomIdea(customIdea); }}>
             <label htmlFor="custom-date-idea">Or suggest your own idea</label>
             <div className="custom-idea-row">
               <input id="custom-date-idea" value={customIdea} onChange={(event) => setCustomIdea(event.target.value)} maxLength={60} placeholder="Your fun date idea…" />
               <button type="submit" className="btn yes" disabled={!customIdea.trim()}>Add idea</button>
             </div>
           </form>
-          {chosen && <p className="chosen">Excellent choice. It's a plan!</p>}
-          {datePlan && chosen && (
+          {chosen.length > 0 && <p className="chosen">{chosen.length === 1 ? "Excellent choice. It's a plan!" : `${chosen.length} lovely ideas. It's a plan!`}</p>}
+          {datePlan && chosen.length > 0 && (
             <button type="button" className="btn yes receipt-open-btn" onClick={() => setStage("receipt")}>
               View date receipt
             </button>
