@@ -758,6 +758,10 @@
   font-size: 27px;
 }
 
+.confirm-date-icon {
+  margin: 0 auto 24px;
+}
+
 .custom-idea-form {
   display: flex;
   width: 100%;

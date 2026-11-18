@@ -353,7 +353,7 @@ function Confirm({ onReallyYes, onRethink, person }) {
       <h2 className="title">{person ? `WAIT… ${person}?!` : "WAIT… really?!"}</h2>
       <p className="subtitle">Did you really say yes? Because my heart just did a backflip.</p>
       <div className="card confirm-card">
-        <p className="big-heart">{"<3"}</p>
+        <span className="date-night-icon confirm-date-icon" aria-hidden="true"><i className="fa-solid fa-martini-glass-citrus" /></span>
         <div className="buttons confirm-buttons">
           <button type="button" className="btn yes" onClick={onReallyYes}>
             Yes, really!
